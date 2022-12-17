@@ -12,7 +12,7 @@
 #include <CL/cl.h>
 #include "ErrHandler.cpp" 
 #include "help_functions.h"
-#include "kernel.h"
+//#include "kernel.h"
 
 using namespace std;
 
@@ -20,7 +20,7 @@ using namespace std;
 
 int main(int argc, const char** argv) {
 
-//	Step 1: Check Command Line Arguments
+//	Check Command Line Arguments
 	#ifdef INFO
 		cout << "HOST-Info: ============================================================= " << endl;
 		cout << "HOST-Info: 				Check Command Line Arguments                  " << endl;
@@ -38,9 +38,9 @@ int main(int argc, const char** argv) {
 	cout << "HOST-Info: XCLBIN_file       : " << xclbinFilename << endl;
 	cout << endl;
 
-// Step 2: Detect Target Platform and Target Device in a system.
+// 	   Detect Target Platform and Target Device in a system.
 //         Create Context and Command Queue.
-// Step 2.1: Get All PLATFORMS, then search for (CL_PLATFORM_VENDOR)
+//         Get All PLATFORMS, then search for (CL_PLATFORM_VENDOR)
 	
 	// Get the number of platforms
 	#ifdef INFO
@@ -90,7 +90,7 @@ int main(int argc, const char** argv) {
 	errCode = clGetPlatformIDs(Num_Platforms, Platform_IDs, NULL);
 	if(errCode != CL_SUCCESS) return ErrHandler(err3, nullptr, EXIT_FAILURE);
 
-	// Search for Platform (ex: Xilinx) using: CL_PLATFORM_VENDOR = Target_Platform_Vendor
+	// Search for Platform using: CL_PLATFORM_VENDOR = Target_Platform_Vendor
 	Platform_Detected = false;
 	for (ui = 0; ui < Num_Platforms; ui++){
 
@@ -115,7 +115,7 @@ int main(int argc, const char** argv) {
 	}
 	if (Platform_Detected == false) return ErrHandler(err7, Target_Platform_Vendor, EXIT_FAILURE);
 
-// Step 2.2:  Get All Devices for selected platform Target_Platform_ID
+//	      Get All Devices for selected platform Target_Platform_ID
 //            then search for Xilinx platform (CL_DEVICE_NAME = Target_Device_Name)
 
 	// Get the Number of Devices
@@ -160,7 +160,7 @@ int main(int argc, const char** argv) {
 		#endif
 	}
 
-// Step 2.3: Create Context
+// Create Context
 
 	#ifdef INFO
 		cout << "HOST-Info: Creating Context ... " << endl;
@@ -168,7 +168,7 @@ int main(int argc, const char** argv) {
 	Context = clCreateContext(0, 1, &Target_Device_ID, NULL, NULL, &errCode);
 	if (errCode != CL_SUCCESS) return ErrHandler(err15, nullptr, EXIT_FAILURE);
 
-// Step 2.4: Create Command Queue (commands are executed in-order)
+// Create Command Queue (commands are executed in-order)
 	#ifdef INFO
 		cout << "HOST-Info: Creating Command Queue ... " << endl;
 	#endif
@@ -176,7 +176,7 @@ int main(int argc, const char** argv) {
 	if (errCode != CL_SUCCESS) return ErrHandler(err16, nullptr, EXIT_FAILURE);
 
 
-// Step 3: Create Program and Kernel
+// Create Program and Kernel
 	#ifdef INFO
 		cout << endl;
 		cout << "HOST-Info: ============================================================= " << endl;
@@ -184,7 +184,7 @@ int main(int argc, const char** argv) {
 		cout << "HOST-Info: ============================================================= " << endl;
 	#endif
 
-// Step 3.1: Load Binary File from a disk to Memory
+// Load Binary File from a disk to Memory
 	unsigned char *xclbin_Memory;
 	int program_length;
 
@@ -195,7 +195,7 @@ int main(int argc, const char** argv) {
 	program_length = loadFile2Memory(xclbinFilename, (char **)&xclbin_Memory);
 	if (program_length < 0) return ErrHandler(err17, xclbinFilename, EXIT_FAILURE);
 
-// Step 3.2: Create a program using a Binary File
+// Create a program using a Binary File
 	size_t Program_Length_in_Bytes;
 	cl_program Program;
 	cl_int Binary_Status;
@@ -208,7 +208,7 @@ int main(int argc, const char** argv) {
 										(const unsigned char **)&xclbin_Memory, &Binary_Status, &errCode);
 	if (errCode != CL_SUCCESS) return ErrHandler(err18, nullptr, EXIT_FAILURE);
 
-// Step 3.3: Build (compiles and links) a program executable from binary
+// Build (compiles and links) a program executable from binary
 	#ifdef INFO
 		cout << "HOST-Info: Building the Program ..." << endl;
 	#endif
@@ -216,7 +216,7 @@ int main(int argc, const char** argv) {
 	errCode = clBuildProgram(Program, 1, &Target_Device_ID, NULL, NULL, NULL);
 	if (errCode != CL_SUCCESS) return ErrHandler(err19, nullptr, EXIT_FAILURE);
 	
-// Step 3.4: Create a Kernels
+// Create a Kernels
 	cl_kernel K_StereoMatching, K_FeatureExtract, K_FeatureTracker, K_MotionEstimation;
 
 	#ifdef INFO
@@ -243,7 +243,7 @@ int main(int argc, const char** argv) {
 	K_MotionEstimation = clCreateKernel(Program, "K_MotionEstimation", &errCode);
 	if (errCode != CL_SUCCESS) return ErrHandler(err23, nullptr, EXIT_FAILURE);
 
-// Step 4: Prepare Data to Run Kernel
+// Prepare Data to Run Kernel
 	int *ImgLeft_0, *ImgRight_0, *ImgLeft_1, *T_Mat;
 
 	#ifdef INFO
@@ -253,7 +253,7 @@ int main(int argc, const char** argv) {
 		cout << "HOST-Info: ============================================================= " << endl;
 	#endif
 
-// Step 4.1: Generate data for ImgLeft_0 array
+//	     Generate data for ImgLeft_0 array
 //           Generate data for ImgRight_0 array
 //           Generate data for ImgLeft_1 array
 //           Allocate Memory to store the results: T_Mat array
@@ -262,48 +262,37 @@ int main(int argc, const char** argv) {
 	void *ptr = nullptr;
 	int Values_Period = 3;
 
-	cout << "HOST-Info: Generating data for DataIn_1 ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_DataIn_1 * sizeof(int)))
+	cout << "HOST-Info: Generating data for SIZE_ImgLeft_0 ... ";
+	if (posix_memalign(&ptr, 4096, SIZE_ImgLeft_0 * sizeof(int)))
 	{
 		cout << endl
-			 << "HOST-Error: Out of Memory during memory allocation for DataIn_1 array" << endl
+			 << "HOST-Error: Out of Memory during memory allocation for SIZE_ImgLeft_0 array" << endl
 			 << endl;
 		return EXIT_FAILURE;
 	}
-	DataIn_1 = reinterpret_cast<int *>(ptr);
-	gen_int_values(DataIn_1, SIZE_DataIn_1, Values_Period);
-	cout << "Generated " << SIZE_DataIn_1 << " values" << endl;
+	ImgLeft_0 = reinterpret_cast<int *>(ptr);
+	gen_int_values(ImgLeft_0, SIZE_ImgLeft_0, Values_Period);
+	cout << "Generated " << SIZE_ImgLeft_0 << " values" << endl;
 
-	cout << "HOST-Info: Generating data for DataIn_2 ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_DataIn_2 * sizeof(int)))
+	cout << "HOST-Info: Generating data for ImgRight_0 ... ";
+	if (posix_memalign(&ptr, 4096, SIZE_ImgRight_0 * sizeof(int)))
 	{
 		cout << endl
-			 << "HOST-Error: Out of Memory during memory allocation for DataIn_2 array" << endl
+			 << "HOST-Error: Out of Memory during memory allocation for ImgRight_0 array" << endl
 			 << endl;
 		return EXIT_FAILURE;
 	}
-	DataIn_2 = reinterpret_cast<int *>(ptr);
-	gen_int_values(DataIn_2, SIZE_DataIn_2, Values_Period);
-	cout << "Generated " << SIZE_DataIn_2 << " values" << endl;
+	ImgRight_0 = reinterpret_cast<int *>(ptr);
+	gen_int_values(ImgRight_0, SIZE_ImgRight_0, Values_Period);
+	cout << "Generated " << SIZE_ImgRight_0 << " values" << endl;
 
 	cout << "HOST-Info: Generating data for DataIn_3 ... ";
-	DataIn_3 = new int[SIZE_DataIn_3];
-	gen_int_values(DataIn_3, SIZE_DataIn_3, Values_Period);
-	cout << "Generated " << SIZE_DataIn_3 << " values" << endl;
+	ImgLeft_1 = new int[SIZE_ImgLeft_1];
+	gen_int_values(ImgLeft_1, SIZE_ImgLeft_1, Values_Period);
+	cout << "Generated " << SIZE_ImgLeft_1 << " values" << endl;
 
-	cout << "HOST-Info: Allocating memory for RES    ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_RES * sizeof(int)))
-	{
-		cout << endl
-			 << "HOST-Error: Out of Memory during memory allocation for RES array" << endl
-			 << endl;
-		return EXIT_FAILURE;
-	}
 	cout << "Allocated" << endl;
-	RES = reinterpret_cast<int *>(ptr);
 
-	cout << endl;
-
-// Step 4.2: Create Buffers in Global Memory to store data
+// Create Buffers in Global Memory to store data
 
 }
