@@ -1,0 +1,10 @@
+﻿  Source.cpp
+  cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)
+C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\Source.cpp(122,22): warning C4101: 'Command_Queue': 未參考的區域變數
+C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\Source.cpp(116,22): warning C4101: 'Nb_Of_Devices': 未參考的區域變數
+C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\Source.cpp(117,22): warning C4101: 'Target_Device_ID': 未參考的區域變數
+C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\Source.cpp(118,22): warning C4101: 'Device_Detected': 未參考的區域變數
+C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\Source.cpp(119,8): warning C4101: 'device_info': 未參考的區域變數
+C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\Source.cpp(121,22): warning C4101: 'Context': 未參考的區域變數
+C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\Source.cpp(115,16): warning C4101: 'Device_IDs': 未參考的區域變數
+  OpenCL.vcxproj -> C:\Users\charl\Desktop\HLS\robotic_computing\OpenCL\OpenCL\OpenCL\x64\Debug\OpenCL.exe
