@@ -57,31 +57,14 @@ void EstimateMotion::estimate_motion(vector<vector<DMatch>> match, vector<KeyPoi
         __solvePnPRansac__(object_points, image2_points, k, distCoef, rvec, tvec,
                            false, maxIter, error, confidence, SOLVEPNP_ITERATIVE);
 
-        rmat = Mat::eye(3, 3, CV_32F);
-        __Rodrigues(rvec, rmat, noArray());
+        rmat.create(3, 3, rvec.depth());
+
+        CvMat _crvec = cvMat(rvec), _crmat = cvMat(rmat), _cjacobian;
+
+        bool ok = cvRodrigues2(&_crvec, &_crmat, 0) > 0;
+        if (!ok)
+            rmat = Scalar(0);
     }
-}
-
-void EstimateMotion::__Rodrigues(InputArray _src, OutputArray _dst, OutputArray _jacobian)
-{
-
-    Mat src = _src.getMat();
-    const Size srcSz = src.size();
-    CV_Check(srcSz, srcSz == Size(3, 1) || srcSz == Size(1, 3) || (srcSz == Size(1, 1) && src.channels() == 3) || srcSz == Size(3, 3),
-             "Input matrix must be 1x3 or 3x1 for a rotation vector, or 3x3 for a rotation matrix");
-
-    bool v2m = src.cols == 1 || src.rows == 1;
-    _dst.create(3, v2m ? 3 : 1, src.depth());
-    Mat dst = _dst.getMat();
-    CvMat _csrc = cvMat(src), _cdst = cvMat(dst), _cjacobian;
-    if (_jacobian.needed())
-    {
-        _jacobian.create(v2m ? Size(9, 3) : Size(3, 9), src.depth());
-        _cjacobian = cvMat(_jacobian.getMat());
-    }
-    bool ok = cvRodrigues2(&_csrc, &_cdst, _jacobian.needed() ? &_cjacobian : 0) > 0;
-    if (!ok)
-        dst = Scalar(0);
 }
 
 bool EstimateMotion::__solvePnPRansac__(Mat opoints, Mat ipoints,
@@ -306,33 +289,12 @@ label:
     return true;
 }
 
-bool EstimateMotion::__solvePnP__(InputArray opoints, InputArray ipoints,
-                                  InputArray cameraMatrix, InputArray distCoeffs,
-                                  OutputArray rvec, OutputArray tvec, int flags)
+bool EstimateMotion::__solvePnP__(InputArray _opoints, InputArray _ipoints,
+                                  InputArray _cameraMatrix, InputArray _distCoeffs,
+                                  OutputArray _rvec, OutputArray _tvec, int flags)
 {
 
     vector<Mat> rvecs, tvecs;
-    int solutions = __solvePnPGeneric__(opoints, ipoints, cameraMatrix, distCoeffs, rvecs, tvecs,
-                                        (SolvePnPMethod)flags, rvec, tvec, noArray());
-
-    if (solutions > 0)
-    {
-        int rdepth = rvec.empty() ? CV_64F : rvec.depth();
-        int tdepth = tvec.empty() ? CV_64F : tvec.depth();
-        rvecs[0].convertTo(rvec, rdepth);
-        tvecs[0].convertTo(tvec, tdepth);
-    }
-
-    return solutions > 0;
-}
-
-int EstimateMotion::__solvePnPGeneric__(InputArray _opoints, InputArray _ipoints,
-                                        InputArray _cameraMatrix, InputArray _distCoeffs,
-                                        OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, SolvePnPMethod flags,
-                                        InputArray _rvec, InputArray _tvec,
-                                        OutputArray reprojectionError)
-{
-
     Mat opoints = _opoints.getMat(), ipoints = _ipoints.getMat();
     int npoints = max(opoints.checkVector(3, CV_32F), opoints.checkVector(3, CV_64F));
 
@@ -340,9 +302,7 @@ int EstimateMotion::__solvePnPGeneric__(InputArray _opoints, InputArray _ipoints
     ipoints = ipoints.reshape(2, npoints);
 
     Mat cameraMatrix0 = _cameraMatrix.getMat();
-    Mat distCoeffs0 = _distCoeffs.getMat();
     Mat cameraMatrix = Mat_<double>(cameraMatrix0);
-    Mat distCoeffs = Mat_<double>(distCoeffs0);
 
     vector<Mat> vec_rvecs, vec_tvecs;
     if (flags == SOLVEPNP_EPNP)
@@ -387,7 +347,13 @@ int EstimateMotion::__solvePnPGeneric__(InputArray _opoints, InputArray _ipoints
         Mat rvec, tvec, R;
         PnP.compute_pose(R, tvec);
 
-        __Rodrigues(R, rvec, noArray());
+        rvec.create(3, 1, R.depth());
+
+        CvMat _cR = cvMat(R), _crvec = cvMat(rvec), _cjacobian;
+
+        bool ok = cvRodrigues2(&_cR, &_crvec, 0) > 0;
+        if (!ok)
+            rvec = Scalar(0);
 
         vec_rvecs.push_back(rvec);
         vec_tvecs.push_back(tvec);
@@ -400,7 +366,7 @@ int EstimateMotion::__solvePnPGeneric__(InputArray _opoints, InputArray _ipoints
         tvec.create(3, 1, CV_64FC1);
 
         CvMat c_objectPoints = cvMat(opoints), c_imagePoints = cvMat(ipoints);
-        CvMat c_cameraMatrix = cvMat(cameraMatrix), c_distCoeffs = cvMat(distCoeffs);
+        CvMat c_cameraMatrix = cvMat(cameraMatrix);
         CvMat c_rvec = cvMat(rvec), c_tvec = cvMat(tvec);
         // cvFindExtrinsicCameraParams2(&c_objectPoints, &c_imagePoints, &c_cameraMatrix,
         //&c_rvec, &c_tvec);
@@ -582,6 +548,9 @@ int EstimateMotion::__solvePnPGeneric__(InputArray _opoints, InputArray _ipoints
 
     int solutions = (int)(vec_rvecs.size());
 
+    OutputArrayOfArrays _rvecs = rvecs;
+    OutputArrayOfArrays _tvecs = tvecs;
+
     _rvecs.create(solutions, 1, CV_64F);
     _tvecs.create(solutions, 1, CV_64F);
 
@@ -591,7 +560,13 @@ int EstimateMotion::__solvePnPGeneric__(InputArray _opoints, InputArray _ipoints
         _tvecs.getMatRef(i) = vec_tvecs[i];
     }
 
-    return solutions;
+    if (solutions > 0)
+    {
+        rvecs[0].convertTo(_rvec, _rvec.depth());
+        tvecs[0].convertTo(_tvec, _tvec.depth());
+    }
+
+    return solutions > 0;
 }
 
 void EstimateMotion::__cvSVD(CvArr *aarr, CvArr *warr, CvArr *uarr, CvArr *varr, int flags)
@@ -612,68 +587,56 @@ void EstimateMotion::__cvSVD(CvArr *aarr, CvArr *warr, CvArr *uarr, CvArr *varr,
     v = cvarrToMat(varr);
     svd.vt = v;
 
-    _SVDcompute(a, svd.w, svd.u, svd.vt, ((flags & CV_SVD_MODIFY_A) ? SVD::MODIFY_A : 0) | ((!svd.u.data && !svd.vt.data) ? SVD::NO_UV : 0) | ((m != n && (svd.u.size() == Size(mn, mn) || svd.vt.size() == Size(mn, mn))) ? SVD::FULL_UV : 0));
+    _SVDcompute(a, svd.w, svd.u, svd.vt);
 
     if (flags & CV_SVD_U_T)
         transpose(svd.u, u);
 }
 
-void EstimateMotion::_SVDcompute(InputArray _aarr, OutputArray _w,
+uchar *EstimateMotion::alignPtr(uchar *ptr, int n)
+{
+    return (uchar *)(((size_t)ptr + n - 1) & -n);
+}
+
+void EstimateMotion::_SVDcompute(Mat src, OutputArray _w,
                                  OutputArray _u, OutputArray _vt)
 {
-    Mat src = _aarr.getMat();
     int m = src.rows, n = src.cols;
     int type = src.type();
 
-    int urows = n;
     size_t esz = src.elemSize(), astep = alignSize(m * esz, 16), vstep = alignSize(n * esz, 16);
-    AutoBuffer<uchar> _buf(urows * astep + n * vstep + n * esz + 32);
+    AutoBuffer<uchar> _buf(n * astep + n * vstep + n * esz + 32);
     uchar *buf = alignPtr(_buf.data(), 16);
     Mat temp_a(n, m, type, buf, astep);
-    Mat temp_w(n, 1, type, buf + urows * astep);
-    Mat temp_u(urows, m, type, buf, astep), temp_v;
-
-    temp_v = Mat(n, n, type, alignPtr(buf + urows * astep + n * esz, 16), vstep);
+    Mat temp_w(n, 1, type, buf + n * astep);
+    Mat temp_u(n, m, type, buf, astep), temp_v;
+    temp_v = Mat(n, n, type, alignPtr(buf + n * astep + n * esz, 16), vstep);
 
     transpose(src, temp_a);
 
-    __JacobiSVD(temp_a.ptr<double>(), temp_u.step, temp_w.ptr<double>(),
-                temp_v.ptr<double>(), temp_v.step, m, n, urows);
-
-    temp_w.copyTo(_w);
-    temp_v.copyTo(_vt);
-    transpose(temp_u, _u);
-}
-
-void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *Vt,
-                                 size_t vstep, int m, int n, int n11)
-{
     double minval = DBL_MIN;
     double eps = DBL_EPSILON * 10;
-    int n1;
-
-    n1 = n11;
 
     AutoBuffer<double> Wbuf(n);
     double *W = Wbuf.data();
     int i, j, k, iter, max_iter = max(m, 30);
     double c, s;
     double sd;
-    astep /= sizeof(At[0]);
-    vstep /= sizeof(Vt[0]);
+    astep /= sizeof(temp_a.ptr<double>()[0]);
+    vstep /= sizeof(temp_v.ptr<double>()[0]);
 
     for (i = 0; i < n; i++)
     {
         for (k = 0, sd = 0; k < m; k++)
         {
-            double t = At[i * astep + k];
+            double t = temp_a.ptr<double>()[i * astep + k];
             sd += (double)t * t;
         }
         W[i] = sd;
 
         for (k = 0; k < n; k++)
-            Vt[i * vstep + k] = 0;
-        Vt[i * vstep + i] = 1;
+            temp_v.ptr<double>()[i * vstep + k] = 0;
+        temp_v.ptr<double>()[i * vstep + i] = 1;
     }
 
     for (iter = 0; iter < max_iter; iter++)
@@ -683,7 +646,7 @@ void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *V
         for (i = 0; i < n - 1; i++)
             for (j = i + 1; j < n; j++)
             {
-                double *Ai = At + i * astep, *Aj = At + j * astep;
+                double *Ai = temp_a.ptr<double>() + i * astep, *Aj = temp_a.ptr<double>() + j * astep;
                 double a = W[i], p = 0, b = W[j];
 
                 for (k = 0; k < m; k++)
@@ -722,7 +685,7 @@ void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *V
 
                 changed = true;
 
-                double *Vi = Vt + i * vstep, *Vj = Vt + j * vstep;
+                double *Vi = temp_v.ptr<double>() + i * vstep, *Vj = temp_v.ptr<double>() + j * vstep;
                 k = 0; // vblas.givens(Vi, Vj, n, c, s);
 
                 for (; k < n; k++)
@@ -741,7 +704,7 @@ void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *V
     {
         for (k = 0, sd = 0; k < m; k++)
         {
-            double t = At[i * astep + k];
+            double t = temp_a.ptr<double>()[i * astep + k];
             sd += (double)t * t;
         }
         W[i] = std::sqrt(sd);
@@ -758,25 +721,25 @@ void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *V
         if (i != j)
         {
             std::swap(W[i], W[j]);
-            if (Vt)
+            if (temp_v.ptr<double>())
             {
                 for (k = 0; k < m; k++)
-                    std::swap(At[i * astep + k], At[j * astep + k]);
+                    std::swap(temp_a.ptr<double>()[i * astep + k], temp_a.ptr<double>()[j * astep + k]);
 
                 for (k = 0; k < n; k++)
-                    std::swap(Vt[i * vstep + k], Vt[j * vstep + k]);
+                    std::swap(temp_v.ptr<double>()[i * vstep + k], temp_v.ptr<double>()[j * vstep + k]);
             }
         }
     }
 
     for (i = 0; i < n; i++)
-        _W[i] = (double)W[i];
+        temp_w.ptr<double>()[i] = (double)W[i];
 
-    if (!Vt)
+    if (!temp_v.ptr<double>())
         return;
 
     RNG rng(0x12345678);
-    for (i = 0; i < n1; i++)
+    for (i = 0; i < n; i++)
     {
         sd = i < n ? W[i] : 0;
 
@@ -789,7 +752,7 @@ void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *V
             for (k = 0; k < m; k++)
             {
                 double val = (rng.next() & 256) != 0 ? val0 : -val0;
-                At[i * astep + k] = val;
+                temp_a.ptr<double>()[i * astep + k] = val;
             }
             for (iter = 0; iter < 2; iter++)
             {
@@ -797,23 +760,23 @@ void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *V
                 {
                     sd = 0;
                     for (k = 0; k < m; k++)
-                        sd += At[i * astep + k] * At[j * astep + k];
+                        sd += temp_a.ptr<double>()[i * astep + k] * temp_a.ptr<double>()[j * astep + k];
                     double asum = 0;
                     for (k = 0; k < m; k++)
                     {
-                        double t = (double)(At[i * astep + k] - sd * At[j * astep + k]);
-                        At[i * astep + k] = t;
+                        double t = (double)(temp_a.ptr<double>()[i * astep + k] - sd * temp_a.ptr<double>()[j * astep + k]);
+                        temp_a.ptr<double>()[i * astep + k] = t;
                         asum += std::abs(t);
                     }
                     asum = asum > eps * 100 ? 1 / asum : 0;
                     for (k = 0; k < m; k++)
-                        At[i * astep + k] *= asum;
+                        temp_a.ptr<double>()[i * astep + k] *= asum;
                 }
             }
             sd = 0;
             for (k = 0; k < m; k++)
             {
-                double t = At[i * astep + k];
+                double t = temp_a.ptr<double>()[i * astep + k];
                 sd += (double)t * t;
             }
             sd = std::sqrt(sd);
@@ -821,8 +784,12 @@ void EstimateMotion::__JacobiSVD(double *At, size_t astep, double *_W, double *V
 
         s = (double)(sd > minval ? 1 / sd : 0.);
         for (k = 0; k < m; k++)
-            At[i * astep + k] *= s;
+            temp_a.ptr<double>()[i * astep + k] *= s;
     }
+
+    temp_w.copyTo(_w);
+    temp_v.copyTo(_vt);
+    transpose(temp_u, _u);
 }
 
 int EstimateMotion::cvRodrigues2(const CvMat *src, CvMat *dst, CvMat *jacobian)
@@ -894,7 +861,7 @@ int EstimateMotion::cvRodrigues2(const CvMat *src, CvMat *dst, CvMat *jacobian)
 
         Matx33d R = cvarrToMat(src);
 
-        _SVDcompute(R, W, U, Vt, 0); // 1!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        _SVDcompute(Mat(R), W, U, Vt);
 
         R = U * Vt;
 
@@ -1181,6 +1148,7 @@ namespace cv
         if (A2)
             delete[] A2;
     }
+
     void epnp::compute_pose(Mat &R, Mat &t)
     {
         // choose_control_points();
@@ -1452,6 +1420,7 @@ namespace cv
         Mat(3, 1, CV_64F, ts[N]).copyTo(t);
         Mat(3, 3, CV_64F, Rs[N]).copyTo(R);
     }
+
     double epnp::dot(const double *v1, const double *v2)
     {
         return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
@@ -1575,6 +1544,7 @@ namespace cv
 
         return sum2 / number_of_correspondences;
     }
+
     void epnp::gauss_newton(const CvMat *L_6x10, const CvMat *Rho, double betas[4])
     {
         const int iterations_number = 5;
