@@ -39,10 +39,14 @@ void FeatureMatching::__knnMatch(InputArray _queryDescriptors, InputArray _train
 
     Mat dist, nidx;
 
-    int dtype = CV_32F;
+    int dtype = CV_32S;
 
     __batchDistance(queryDescriptors, trainDescriptors, dist, dtype, nidx,
-        NORM_L2, knn);
+        NORM_HAMMING2, knn);
+
+    Mat temp;
+    dist.convertTo(temp, CV_32F);
+    dist = temp;
 
     for (int qIdx = 0; qIdx < queryDescriptors.rows; qIdx++)
     {
@@ -93,12 +97,11 @@ void FeatureMatching::__batchDistance(InputArray _src1, InputArray _src2,
 
     for (int i = 0; i < src1.rows; i++)
     {
-        __batchDistL2_((float*)src1.ptr(i), (float*)src2.ptr(), src2.step, src2.rows, src2.cols,
-            (float*)bufptr);
+        __batchDistHamming2_((uchar*)src1.ptr(i), (uchar*)src2.ptr(), 
+            src2.step, src2.rows, src2.cols, (int*)bufptr);
+
 
         int* nidxptr = nidx.ptr<int>(i);
-        // since positive float's can be compared just like int's,
-        // we handle both CV_32S and CV_32F cases with a single branch
         int* distptr = (int*)dist.ptr(i);
 
         int j, k;
@@ -121,26 +124,26 @@ void FeatureMatching::__batchDistance(InputArray _src1, InputArray _src2,
 }
 
 
-void FeatureMatching::__batchDistL2_(const float* src1, const float* src2, size_t step2,
-    int nvecs, int len, float* dist)
+void FeatureMatching::__batchDistHamming2_(const uchar* src1, const uchar* src2, size_t step2,
+    int nvecs, int len, int* dist)
 {
+    const uchar tab[256] =
+    {
+        0, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3,
+        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3,
+        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+        2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+        2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+        2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4
+    };
+
     step2 /= sizeof(src2[0]);
 
-    for (int i = 0; i < nvecs; i++)
-        dist[i] = sqrt(__normL2Sqr(src1, src2 + step2 * i, len));
-}
-
-
-
-float FeatureMatching::__normL2Sqr(const float* a, const float* b, int n)
-{
-    float s = 0;
-    int i = 0;
-    
-    for (; i < n; i++)
+    for (int i = 0; i < nvecs; i++) 
     {
-        float v = float(a[i] - b[i]);
-        s += v * v;
+        for (int j = 0; j < len; j++)   // len = 32
+            dist[i] += tab[src1[j] ^ src2[j]];
     }
-    return s;
 }

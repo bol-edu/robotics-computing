@@ -8,20 +8,18 @@ using namespace std;
 class FeatureMatching
 {
 private:
-	void __knnMatch(cv::InputArray queryDescriptors, cv::InputArray trainDescriptors,
-		vector<vector<cv::DMatch> >& matches, int k);
+    void knnMatch(cv::InputArray queryDescriptors, cv::InputArray trainDescriptors,
+        vector<vector<cv::DMatch> >& matches, int k);
 
-	void __batchDistance(cv::InputArray _src1, cv::InputArray _src2,
-		cv::OutputArray _dist, int dtype, cv::OutputArray _nidx,
-		int normType, int K);
+    void batchDistance(cv::InputArray _src1, cv::InputArray _src2,
+        cv::OutputArray _dist, int dtype, cv::OutputArray nidx,
+        int normType, int K);
 
-	void __batchDistL2_(const float* src1, const float* src2, size_t step2,
-		int nvecs, int len, float* dist);
+    void __batchDistHamming2(const uchar* src1, const uchar* src2, size_t step2,
+        int nvecs, int len, int* dist);
 
-	float __normL2Sqr(const float* a, const float* b, int n);
+    int __normHamming(const uchar* a, const uchar* b, int n, int cellSize);
 
 public:
-	vector<cv::DMatch> match_features(cv::Mat des1, cv::Mat des2, int detector, bool sorting, float dist_threshold);
-
+    vector<cv::DMatch> match_features(cv::Mat des1, cv::Mat des2, int detector, bool sorting, float dist_threshold);
 };
-
