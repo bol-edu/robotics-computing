@@ -1902,9 +1902,9 @@ Ptr<BaseRowFilter> getLinearRowFilter(
     /*if (sdepth == CV_8U && ddepth == CV_32S)
         return makePtr<RowFilter<uchar, int, RowVec_8u32s> >
         (kernel, anchor, RowVec_8u32s(kernel));*/
-    /*if (sdepth == CV_8U && ddepth == CV_32F)
+    if (sdepth == CV_8U && ddepth == CV_32F)
         return makePtr<RowFilter<uchar, float, RowNoVec> >(kernel, anchor);
-    if (sdepth == CV_8U && ddepth == CV_64F)
+   /* if (sdepth == CV_8U && ddepth == CV_64F)
         return makePtr<RowFilter<uchar, double, RowNoVec> >(kernel, anchor);
     if (sdepth == CV_16U && ddepth == CV_32F)
         return makePtr<RowFilter<ushort, float, RowNoVec> >(kernel, anchor);
@@ -1915,9 +1915,9 @@ Ptr<BaseRowFilter> getLinearRowFilter(
         (kernel, anchor, RowVec_16s32f(kernel));*/
    /*if (sdepth == CV_16S && ddepth == CV_64F)
         return makePtr<RowFilter<short, double, RowNoVec> >(kernel, anchor);*/
-    if (sdepth == CV_32F && ddepth == CV_32F)
+   /* if (sdepth == CV_32F && ddepth == CV_32F)
         return makePtr<RowFilter<float, float, RowVec_32f> >
-        (kernel, anchor, RowVec_32f(kernel)); 
+        (kernel, anchor, RowVec_32f(kernel)); */
     /*if (sdepth == CV_32F && ddepth == CV_64F)
         return makePtr<RowFilter<float, double, RowNoVec> >(kernel, anchor);
     if (sdepth == CV_64F && ddepth == CV_64F)
@@ -1989,9 +1989,9 @@ Ptr<BaseColumnFilter> getLinearColumnFilter(
             return makePtr<SymmColumnFilter<FixedPtCastEx<int, uchar>, SymmColumnVec_32s8u> >
             (kernel, anchor, delta, symmetryType, FixedPtCastEx<int, uchar>(bits),
                 SymmColumnVec_32s8u(kernel, symmetryType, bits, delta));*/
-        /*if (ddepth == CV_8U && sdepth == CV_32F)
+        if (ddepth == CV_8U && sdepth == CV_32F)
             return makePtr<SymmColumnFilter<Cast<float, uchar>, ColumnNoVec> >
-            (kernel, anchor, delta, symmetryType);*/
+            (kernel, anchor, delta, symmetryType);
        /* if (ddepth == CV_8U && sdepth == CV_64F)
             return makePtr<SymmColumnFilter<Cast<double, uchar>, ColumnNoVec> >
             (kernel, anchor, delta, symmetryType);
@@ -2011,10 +2011,10 @@ Ptr<BaseColumnFilter> getLinearColumnFilter(
         if (ddepth == CV_16S && sdepth == CV_64F)
             return makePtr<SymmColumnFilter<Cast<double, short>, ColumnNoVec> >
             (kernel, anchor, delta, symmetryType);*/
-        if (ddepth == CV_32F && sdepth == CV_32F)
+       /* if (ddepth == CV_32F && sdepth == CV_32F)
             return makePtr<SymmColumnFilter<Cast<float, float>, SymmColumnVec_32f> >
             (kernel, anchor, delta, symmetryType, Cast<float, float>(),
-                SymmColumnVec_32f(kernel, symmetryType, 0, delta));
+                SymmColumnVec_32f(kernel, symmetryType, 0, delta));*/
        /*if (ddepth == CV_64F && sdepth == CV_64F)
             return makePtr<SymmColumnFilter<Cast<double, double>, ColumnNoVec> >
             (kernel, anchor, delta, symmetryType);
