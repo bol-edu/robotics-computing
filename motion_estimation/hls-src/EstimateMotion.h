@@ -11,9 +11,14 @@ private:
     FLOAT confidence;
     FLOAT threshold;
     FLOAT maxIter;
+    FLOAT cx;
+    FLOAT cy;
+    FLOAT fx;
+    FLOAT fy;
 
     void RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix k);
     void getSubset(Matrix &opoint, Matrix &ipoint, Matrix &subopoint, Matrix &subipoint);
+    void EPnP(Matrix &opoint, Matrix &ipoint, Matrix &k, Matrix &rmat, Matrix &tvec);
 
 public:
     EstimateMotion();
