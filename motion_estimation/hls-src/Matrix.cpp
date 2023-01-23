@@ -1,5 +1,11 @@
 #include "Matrix.h"
 
+#define SWAP(a, b) \
+    {              \
+        temp = a;  \
+        a = b;     \
+        b = temp;  \
+    }
 #define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 static FLOAT sqrarg;
 #define SQR(a) ((sqrarg = (a)) == 0.0 ? 0.0 : sqrarg * sqrarg)
@@ -29,12 +35,13 @@ Matrix::Matrix(const int32_t r_, const int32_t c_, const FLOAT *val_)
             val[i][j] = val_[k++];
 }
 
+/*
 Matrix::Matrix(const Matrix &M)
 {
     allocateMemory(M.m, M.n);
     for (int32_t i = 0; i < M.m; i++)
         memcpy(val[i], M.val[i], M.n * sizeof(FLOAT));
-}
+}*/
 
 Matrix::~Matrix()
 {
@@ -97,6 +104,32 @@ void Matrix::setMat(const Matrix &M, const int32_t i1, const int32_t j1)
             val[i1 + i][j1 + j] = M.val[i][j];
 }
 
+FLOAT Matrix::dot(const FLOAT *v1, const FLOAT *v2)
+{
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+
+Matrix Matrix::eye(const int32_t m)
+{
+    Matrix M(m, m);
+    for (int32_t i = 0; i < m; i++)
+        M.val[i][i] = 1;
+    return M;
+}
+
+Matrix Matrix::inv()
+{
+    if (m != n)
+    {
+        cerr << "ERROR: Trying to invert matrix of size (" << m << "x" << n << ")" << endl;
+        exit(0);
+    }
+    // Matrix A(M);
+    Matrix B = eye(m);
+    B.solve(*this);
+    return B;
+}
+
 Matrix Matrix::trans()
 {
     Matrix C(n, m);
@@ -122,6 +155,135 @@ Matrix Matrix::multrans()
         }
     }
     return C;
+}
+
+bool Matrix::solve(const Matrix &M, FLOAT eps)
+{
+
+    // substitutes
+    const Matrix &A = M;
+    Matrix &B = *this;
+
+    if (A.m != A.n || A.m != B.m || A.m < 1 || B.n < 1)
+    {
+        cerr << "ERROR: Trying to eliminate matrices of size (" << A.m << "x" << A.n << ") and (" << B.m << "x" << B.n << ")" << endl;
+        exit(0);
+    }
+
+    // index vectors for bookkeeping on the pivoting
+    int32_t *indxc = new int32_t[m];
+    int32_t *indxr = new int32_t[m];
+    int32_t *ipiv = new int32_t[m];
+
+    // loop variables
+    int32_t i, icol, irow, j, k, l, ll;
+    FLOAT big, dum, pivinv, temp;
+
+    // initialize pivots to zero
+    for (j = 0; j < m; j++)
+        ipiv[j] = 0;
+
+    // main loop over the columns to be reduced
+    for (i = 0; i < m; i++)
+    {
+
+        big = 0.0;
+
+        // search for a pivot element
+        for (j = 0; j < m; j++)
+            if (ipiv[j] != 1)
+                for (k = 0; k < m; k++)
+                    if (ipiv[k] == 0)
+                        if (fabs(A.val[j][k]) >= big)
+                        {
+                            big = fabs(A.val[j][k]);
+                            irow = j;
+                            icol = k;
+                        }
+        ++(ipiv[icol]);
+
+        // We now have the pivot element, so we interchange rows, if needed, to put the pivot
+        // element on the diagonal. The columns are not physically interchanged, only relabeled.
+        if (irow != icol)
+        {
+            for (l = 0; l < m; l++)
+                SWAP(A.val[irow][l], A.val[icol][l])
+            for (l = 0; l < n; l++)
+                SWAP(B.val[irow][l], B.val[icol][l])
+        }
+
+        indxr[i] = irow; // We are now ready to divide the pivot row by the
+        indxc[i] = icol; // pivot element, located at irow and icol.
+
+        // check for singularity
+        if (fabs(A.val[icol][icol]) < eps)
+        {
+            delete[] indxc;
+            delete[] indxr;
+            delete[] ipiv;
+            return false;
+        }
+
+        pivinv = 1.0 / A.val[icol][icol];
+        A.val[icol][icol] = 1.0;
+        for (l = 0; l < m; l++)
+            A.val[icol][l] *= pivinv;
+        for (l = 0; l < n; l++)
+            B.val[icol][l] *= pivinv;
+
+        // Next, we reduce the rows except for the pivot one
+        for (ll = 0; ll < m; ll++)
+            if (ll != icol)
+            {
+                dum = A.val[ll][icol];
+                A.val[ll][icol] = 0.0;
+                for (l = 0; l < m; l++)
+                    A.val[ll][l] -= A.val[icol][l] * dum;
+                for (l = 0; l < n; l++)
+                    B.val[ll][l] -= B.val[icol][l] * dum;
+            }
+    }
+
+    // This is the end of the main loop over columns of the reduction. It only remains to unscramble
+    // the solution in view of the column interchanges. We do this by interchanging pairs of
+    // columns in the reverse order that the permutation was built up.
+    for (l = m - 1; l >= 0; l--)
+    {
+        if (indxr[l] != indxc[l])
+            for (k = 0; k < m; k++)
+                SWAP(A.val[k][indxr[l]], A.val[k][indxc[l]])
+    }
+
+    // success
+    delete[] indxc;
+    delete[] indxr;
+    delete[] ipiv;
+    return true;
+}
+
+void Matrix::solve(Matrix &A, Matrix &x, Matrix &b)
+{
+    Matrix U, W, V;
+    A.trans().svd(U, W, V);
+
+    x = Matrix(A.n, 1);
+
+    for (int i = 0; i < A.n; i++)
+    {
+        double wi = 1 / W.val[i][0];
+        double s = 0;
+
+        for (int j = 0; j < A.m; j++)
+        {
+            s += V.val[j][i] * b.val[j][0];
+        }
+        s *= wi;
+
+        for (int j = 0; j < A.n; j++)
+        {
+            x.val[j][0] = (double)(x.val[j][0] + s * U.val[j][i]);
+        }
+    }
 }
 
 void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
@@ -459,7 +621,7 @@ ostream &operator<<(ostream &out, const Matrix &M)
             out << buffer;
             for (int32_t j = 0; j < M.n; j++)
             {
-                sprintf(buffer, "%12.7f ", M.val[i][j]);
+                sprintf(buffer, "%12.9f ", M.val[i][j]);
                 out << buffer;
             }
             if (i < M.m - 1)

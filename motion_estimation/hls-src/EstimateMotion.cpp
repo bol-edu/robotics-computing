@@ -19,10 +19,13 @@ void EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1,
     Matrix opoint(match.m, 3);
     Matrix ipoint(match.m, 2);
 
-    cx = k.val[0][2];
-    cy = k.val[1][2];
-    fx = k.val[0][0];
-    fy = k.val[1][1];
+    FLOAT cx = k.val[0][2];
+    FLOAT cy = k.val[1][2];
+    FLOAT fx = k.val[0][0];
+    FLOAT fy = k.val[1][1];
+
+    k.releaseMemory();
+
     int j = 0;
     for (int i = 0; i < match.m; i++)
     {
@@ -52,7 +55,8 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix k)
     getSubset(opoint, ipoint, subopoint, subipoint);
 
     Matrix rmat, tvec;
-    EPnP(subopoint, subipoint, k, rmat, tvec);
+    EPnP epnp = EPnP(subopoint, subipoint, k);
+    epnp.compute(rmat, tvec);
 }
 
 void EstimateMotion::getSubset(Matrix &opoint, Matrix &ipoint, Matrix &subopoint, Matrix &subipoint)
@@ -92,40 +96,6 @@ void EstimateMotion::getSubset(Matrix &opoint, Matrix &ipoint, Matrix &subopoint
         subipoint.val[i][0] = ipoint.val[idx[i]][0];
         subipoint.val[i][1] = ipoint.val[idx[i]][1];
     }
-}
-
-void EstimateMotion::EPnP(Matrix &pws, Matrix &us, Matrix &k, Matrix &rmat, Matrix &tvec)
-{
-    int32_t number_of_correspondences = pws.m;
-
-    // control points in world-coord;
-    Matrix cws = Matrix(4, 3);
-    // Take C0 as the reference points centroid:
-    cws.val[0][0] = cws.val[0][1] = cws.val[0][2] = 0;
-    for (int i = 0; i < number_of_correspondences; i++)
-        for (int j = 0; j < 3; j++)
-            cws.val[0][j] += pws.val[i][j];
-
-    for (int j = 0; j < 3; j++)
-        cws.val[0][j] /= number_of_correspondences;
-
-    // Take C1, C2, and C3 from PCA on the reference points:
-    Matrix PW0 = Matrix(number_of_correspondences, 3);
-    for (int i = 0; i < number_of_correspondences; i++)
-        for (int j = 0; j < 3; j++)
-            PW0.val[i][j] = pws.val[i][j] - cws.val[0][j];
-
-    Matrix PW0tPW0 = PW0.multrans();
-    Matrix DC;  // = Matrix(3, 1);
-    Matrix UCt; // = Matrix(3, 3);
-    Matrix V;
-    PW0tPW0.svd(UCt, DC, V);
-
-    cout << DC << endl;
-    cout << UCt << endl;
-    // cvMulTransposed(PW0, &PW0tPW0, 1); // PW0tPW0 = PW0t . PW0
-    // cvSVD(&PW0tPW0, &DC, &UCt, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
-    //  cvd(MtM, λ, ν, ...)
 }
 
 EstimateMotion::~EstimateMotion()
