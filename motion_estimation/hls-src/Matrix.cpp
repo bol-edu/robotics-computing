@@ -104,6 +104,39 @@ void Matrix::setMat(const Matrix &M, const int32_t i1, const int32_t j1)
             val[i1 + i][j1 + j] = M.val[i][j];
 }
 
+Matrix Matrix::operator+(const Matrix &M)
+{
+    const Matrix &A = *this;
+    const Matrix &B = M;
+    if (A.m != B.m || A.n != B.n)
+    {
+        cerr << "ERROR: Trying to add matrices of size (" << A.m << "x" << A.n << ") and (" << B.m << "x" << B.n << ")" << endl;
+        exit(0);
+    }
+    Matrix C(A.m, A.n);
+    for (int32_t i = 0; i < m; i++)
+        for (int32_t j = 0; j < n; j++)
+            C.val[i][j] = A.val[i][j] + B.val[i][j];
+    return C;
+}
+
+Matrix Matrix::operator*(const Matrix &M)
+{
+    const Matrix &A = *this;
+    const Matrix &B = M;
+    if (A.n != B.m)
+    {
+        cerr << "ERROR: Trying to multiply matrices of size (" << A.m << "x" << A.n << ") and (" << B.m << "x" << B.n << ")" << endl;
+        exit(0);
+    }
+    Matrix C(A.m, B.n);
+    for (int32_t i = 0; i < A.m; i++)
+        for (int32_t j = 0; j < B.n; j++)
+            for (int32_t k = 0; k < A.n; k++)
+                C.val[i][j] += A.val[i][k] * B.val[k][j];
+    return C;
+}
+
 FLOAT Matrix::dot(const FLOAT *v1, const FLOAT *v2)
 {
     return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
@@ -621,7 +654,7 @@ ostream &operator<<(ostream &out, const Matrix &M)
             out << buffer;
             for (int32_t j = 0; j < M.n; j++)
             {
-                sprintf(buffer, "%12.9f ", M.val[i][j]);
+                sprintf(buffer, "%lf ", M.val[i][j]);
                 out << buffer;
             }
             if (i < M.m - 1)

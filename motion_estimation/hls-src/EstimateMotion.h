@@ -7,14 +7,21 @@ class EstimateMotion
 private:
     int32_t max_depth;
     int32_t model_points;
-    uint32_t RNG_COEF;
-    uint32_t RNG_state;
+    uint64_t RNG_state;
     FLOAT confidence;
     FLOAT threshold;
-    FLOAT maxIter;
+    int32_t maxIter;
+    FLOAT cx;
+    FLOAT cy;
+    FLOAT fx;
+    FLOAT fy;
 
-    void RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix k);
-    void getSubset(Matrix &opoint, Matrix &ipoint, Matrix &subopoint, Matrix &subipoint);
+    void RANSAC_EPnP(Matrix opoint, Matrix ipoint);
+    void getSubset(Matrix opoint, Matrix ipoint, Matrix &subopoint, Matrix &subipoint);
+    Matrix projectPoint(Matrix opoint, Matrix rmat, Matrix tvec);
+
+    unsigned RNG_next();
+    int64_t RNG_uniform(int64_t a, int64_t b);
 
 public:
     EstimateMotion();

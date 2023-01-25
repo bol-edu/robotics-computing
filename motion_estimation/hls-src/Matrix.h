@@ -31,9 +31,9 @@ public:
 
     // dot product of 2 vectors
     static FLOAT dot(const FLOAT *v1, const FLOAT *v2);
-    // Matrix operator+(const Matrix &M); // add matrix
+    Matrix operator+(const Matrix &M); // add matrix
     // Matrix operator-(const Matrix &M); // subtract matrix
-    // Matrix operator*(const Matrix &M); // multiply with matrix
+    Matrix operator*(const Matrix &M); // multiply with matrix
     // Matrix operator*(const FLOAT &s);  // multiply with scalar
     // Matrix operator/(const Matrix &M); // divide elementwise by matrix (or vector)
     // Matrix operator/(const FLOAT &s);  // divide by scalar
