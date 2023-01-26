@@ -366,7 +366,7 @@ FLOAT EPnP::compute_R_and_t(const Matrix &u, const FLOAT *betas,
             R.val[i][j] = Matrix::dot(ABt_U.val[i], ABt_V.val[j]);
         }
 
-    const double det =
+    const FLOAT det =
         R.val[0][0] * R.val[1][1] * R.val[2][2] +
         R.val[0][1] * R.val[1][2] * R.val[2][0] +
         R.val[0][2] * R.val[1][0] * R.val[2][1] -

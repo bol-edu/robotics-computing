@@ -1,7 +1,7 @@
 #include "EstimateMotion.h"
 
 #define RNG_COEF 4164903690U
-#define DBL_MIN 2.2250738585072014e-308
+#define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 #define SWAP(a, b) \
     {              \
         temp = a;  \
@@ -149,7 +149,7 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint)
             opoint_inlier.val[j][2] = opoint.val[i][2];
 
             ipoint_inlier.val[j][0] = ipoint.val[i][0];
-            ipoint_inlier.val[j][0] = ipoint.val[i][0];
+            ipoint_inlier.val[j][1] = ipoint.val[i][1];
             j++;
         }
     }

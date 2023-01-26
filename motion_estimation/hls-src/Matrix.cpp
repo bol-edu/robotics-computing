@@ -1,18 +1,16 @@
 #include "Matrix.h"
 
+#define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 #define SWAP(a, b) \
     {              \
         temp = a;  \
         a = b;     \
         b = temp;  \
     }
-#define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 static FLOAT sqrarg;
 #define SQR(a) ((sqrarg = (a)) == 0.0 ? 0.0 : sqrarg * sqrarg)
-static FLOAT maxarg1, maxarg2;
-#define FMAX(a, b) (maxarg1 = (a), maxarg2 = (b), (maxarg1) > (maxarg2) ? (maxarg1) : (maxarg2))
-static int32_t iminarg1, iminarg2;
-#define IMIN(a, b) (iminarg1 = (a), iminarg2 = (b), (iminarg1) < (iminarg2) ? (iminarg1) : (iminarg2))
+#define MAX(a, b) (a > b ? a : b)
+#define MIN(a, b) (a < b ? a : b)
 
 Matrix::Matrix()
 {
@@ -104,6 +102,22 @@ void Matrix::setMat(const Matrix &M, const int32_t i1, const int32_t j1)
             val[i1 + i][j1 + j] = M.val[i][j];
 }
 
+Matrix &Matrix::operator=(const Matrix &M)
+{
+    if (this != &M)
+    {
+        if (M.m != m || M.n != n)
+        {
+            releaseMemory();
+            allocateMemory(M.m, M.n);
+        }
+        if (M.n > 0)
+            for (int32_t i = 0; i < M.m; i++)
+                memcpy(val[i], M.val[i], M.n * sizeof(FLOAT));
+    }
+    return *this;
+}
+
 Matrix Matrix::operator+(const Matrix &M)
 {
     const Matrix &A = *this;
@@ -117,6 +131,22 @@ Matrix Matrix::operator+(const Matrix &M)
     for (int32_t i = 0; i < m; i++)
         for (int32_t j = 0; j < n; j++)
             C.val[i][j] = A.val[i][j] + B.val[i][j];
+    return C;
+}
+
+Matrix Matrix::operator-(const Matrix &M)
+{
+    const Matrix &A = *this;
+    const Matrix &B = M;
+    if (A.m != B.m || A.n != B.n)
+    {
+        cerr << "ERROR: Trying to subtract matrices of size (" << A.m << "x" << A.n << ") and (" << B.m << "x" << B.n << ")" << endl;
+        exit(0);
+    }
+    Matrix C(A.m, A.n);
+    for (int32_t i = 0; i < m; i++)
+        for (int32_t j = 0; j < n; j++)
+            C.val[i][j] = A.val[i][j] - B.val[i][j];
     return C;
 }
 
@@ -134,6 +164,15 @@ Matrix Matrix::operator*(const Matrix &M)
         for (int32_t j = 0; j < B.n; j++)
             for (int32_t k = 0; k < A.n; k++)
                 C.val[i][j] += A.val[i][k] * B.val[k][j];
+    return C;
+}
+
+Matrix Matrix::operator*(const FLOAT &s)
+{
+    Matrix C(m, n);
+    for (int32_t i = 0; i < m; i++)
+        for (int32_t j = 0; j < n; j++)
+            C.val[i][j] = val[i][j] * s;
     return C;
 }
 
@@ -395,7 +434,7 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
                     U.val[i][k] *= scale;
             }
         }
-        anorm = FMAX(anorm, (fabs(w[i]) + fabs(rv1[i])));
+        anorm = MAX(anorm, (fabs(w[i]) + fabs(rv1[i])));
     }
     for (i = n - 1; i >= 0; i--)
     { // Accumulation of right-hand transformations.
@@ -420,7 +459,7 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
         g = rv1[i];
         l = i;
     }
-    for (i = IMIN(m, n) - 1; i >= 0; i--)
+    for (i = MIN(m, n) - 1; i >= 0; i--)
     { // Accumulation of left-hand transformations.
         l = i + 1;
         g = w[i];

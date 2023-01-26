@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <string.h>
 #include <math.h>
@@ -20,6 +19,9 @@ public:
 
     ~Matrix();
 
+    // assignment operator, copies contents of M
+    Matrix &operator=(const Matrix &M);
+
     // set or get submatrices of current matrix
     Matrix getMat(int32_t i1, int32_t j1, int32_t i2 = -1, int32_t j2 = -1);
     void setMat(const Matrix &M, const int32_t i, const int32_t j);
@@ -32,9 +34,9 @@ public:
     // dot product of 2 vectors
     static FLOAT dot(const FLOAT *v1, const FLOAT *v2);
     Matrix operator+(const Matrix &M); // add matrix
-    // Matrix operator-(const Matrix &M); // subtract matrix
+    Matrix operator-(const Matrix &M); // subtract matrix
     Matrix operator*(const Matrix &M); // multiply with matrix
-    // Matrix operator*(const FLOAT &s);  // multiply with scalar
+    Matrix operator*(const FLOAT &s);  // multiply with scalar
     // Matrix operator/(const Matrix &M); // divide elementwise by matrix (or vector)
     // Matrix operator/(const FLOAT &s);  // divide by scalar
     // Matrix operator-();                // negative matrix

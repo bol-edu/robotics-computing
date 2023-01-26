@@ -1,5 +1,16 @@
 #include "PnPIterative.h"
 
+#define MAX(a, b) (a > b ? a : b)
+
+FLOAT NORM(Matrix a)
+{
+    FLOAT b = 0.0;
+    for (int i = 0; i < a.m; i++)
+        for (int j = 0; j < a.n; j++)
+            b += a.val[i][j] * a.val[i][j];
+    return sqrt(b);
+}
+
 PnPIterative::PnPIterative(Matrix &opoints, Matrix &ipoints, FLOAT _fx, FLOAT _fy, FLOAT _cx, FLOAT _cy)
 {
     number_of_points = opoints.m;
@@ -22,7 +33,7 @@ void PnPIterative::compute(Matrix &rmat, Matrix &tvec)
 {
     const int32_t max_iter = 20;
 
-    Matrix _mn = Matrix(number_of_points, 2);
+    Matrix mn = Matrix(number_of_points, 2);
     for (int32_t i = 0; i < number_of_points; i++)
     {
         FLOAT x, y;
@@ -32,112 +43,245 @@ void PnPIterative::compute(Matrix &rmat, Matrix &tvec)
         x = (x - cx) * (1. / fx);
         y = (y - cy) * (1. / fy);
 
-        _mn.val[i][0] = x;
-        _mn.val[i][1] = y;
+        mn.val[i][0] = x;
+        mn.val[i][1] = y;
     }
 
-    Matrix Mc = Matrix(1, 3);
+    // non-planar structure. Use DLT method
+    Matrix matL = Matrix(2 * number_of_points, 12);
     for (int32_t i = 0; i < number_of_points; i++)
     {
-        for (int32_t j = 0; j < 3; j++)
-            Mc.val[0][j] += matM.val[i][j];
+        FLOAT x = -mn.val[i][0], y = -mn.val[i][1];
+        matL.val[2 * i][0] = matL.val[2 * i + 1][4] = matM.val[i][0];
+        matL.val[2 * i][1] = matL.val[2 * i + 1][5] = matM.val[i][1];
+        matL.val[2 * i][2] = matL.val[2 * i + 1][6] = matM.val[i][2];
+        matL.val[2 * i][3] = matL.val[2 * i + 1][7] = 1.;
+        matL.val[2 * i][4] = matL.val[2 * i][5] = matL.val[2 * i][6] = matL.val[2 * i][7] = 0.;
+        matL.val[2 * i + 1][0] = matL.val[2 * i + 1][1] = matL.val[2 * i + 1][2] = matL.val[2 * i + 1][3] = 0.;
+        matL.val[2 * i][8] = x * matM.val[i][0];
+        matL.val[2 * i][9] = x * matM.val[i][1];
+        matL.val[2 * i][10] = x * matM.val[i][2];
+        matL.val[2 * i][11] = x;
+        matL.val[2 * i + 1][8] = y * matM.val[i][0];
+        matL.val[2 * i + 1][9] = y * matM.val[i][1];
+        matL.val[2 * i + 1][10] = y * matM.val[i][2];
+        matL.val[2 * i + 1][11] = y;
     }
-    for (int32_t j = 0; j < 3; j++)
-        Mc.val[0][j] /= number_of_points;
 
-    cout << Mc << endl
+    Matrix LL = matL.multrans();
+
+    Matrix LW, LU, LV;
+    LL.svd(LU, LW, LV);
+
+    Matrix RR = Matrix(3, 3);
+    RR.val[0][0] = LV.val[0][11];
+    RR.val[0][1] = LV.val[1][11];
+    RR.val[0][2] = LV.val[2][11];
+    RR.val[1][0] = LV.val[4][11];
+    RR.val[1][1] = LV.val[5][11];
+    RR.val[1][2] = LV.val[6][11];
+    RR.val[2][0] = LV.val[8][11];
+    RR.val[2][1] = LV.val[9][11];
+    RR.val[2][2] = LV.val[10][11];
+
+    Matrix tt = Matrix(3, 1);
+    tt.val[0][0] = LV.val[3][11];
+    tt.val[1][0] = LV.val[7][11];
+    tt.val[2][0] = LV.val[11][11];
+
+    FLOAT det =
+        RR.val[0][0] * RR.val[1][1] * RR.val[2][2] +
+        RR.val[0][1] * RR.val[1][2] * RR.val[2][0] +
+        RR.val[0][2] * RR.val[1][0] * RR.val[2][1] -
+        RR.val[0][2] * RR.val[1][1] * RR.val[2][0] -
+        RR.val[0][1] * RR.val[1][0] * RR.val[2][2] -
+        RR.val[0][0] * RR.val[1][2] * RR.val[2][1];
+    if (det < 0)
+    {
+        RR = RR * (-1.);
+        tt = tt * (-1.);
+    }
+
+    FLOAT sc = NORM(RR); //// !!!!!!!!!!!!!!!!!!!!!
+    Matrix matW, matU, matV;
+    RR.svd(matU, matW, matV);
+    Matrix matR = matU.trans() * matV;
+    cout << matR << endl
          << endl;
-    /*cvReshape(matM, matM, 1, count);
-    cvMulTransposed(matM, &_MM, 1, &_Mc);
-    __cvSVD(&_MM, &matW, 0, &matV, CV_SVD_MODIFY_A + CV_SVD_V_T);
+    // cvGEMM(&matU, &matV, 1, 0, 0, &matR, CV_GEMM_A_T);
+    // matR = cvMat(Mat(matU.rows, matU.cols, matU.type, matU.data.db).t() * Mat(matV.rows, matV.cols, matV.type, matV.data.db));
+    // cvScale(&_tt, &_t, cvNorm(&matR) / sc);
+    // cvRodrigues2(&matR, &_r, 0);
 
+    /*cvReshape(matM, matM, 3, 1);
+    cvReshape(_mn, _mn, 2, 1);
 
-        // non-planar structure. Use DLT method
-        double *L;
-        double LL[12 * 12], LW[12], LV[12 * 12], sc;
-        CvMat _LL = cvMat(12, 12, CV_64F, LL);
-        CvMat _LW = cvMat(12, 1, CV_64F, LW);
-        CvMat _LV = cvMat(12, 12, CV_64F, LV);
-        CvMat _RRt, _RR, _tt;
-        CvPoint3D64f *M = (CvPoint3D64f *)matM->data.db;
-        CvPoint2D64f *mn = (CvPoint2D64f *)_mn->data.db;
+    // refine extrinsic parameters using iterative algorithm
+    CvLevMarq solver(6, count * 2, cvTermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, max_iter, FLT_EPSILON), true);
+    cvCopy(&_param, solver.param);
 
-        matL.reset(cvCreateMat(2 * count, 12, CV_64F));
-        L = matL->data.db;
-
-        for (i = 0; i < count; i++, L += 24)
+    for (;;)
+    {
+        CvMat *matJ = 0, *_err = 0;
+        const CvMat *__param = 0;
+        bool proceed = solver.update(__param, matJ, _err);
+        cvCopy(__param, &_param);
+        if (!proceed || !_err)
+            break;
+        cvReshape(_err, _err, 2, 1);
+        if (matJ)
         {
-            double x = -mn[i].x, y = -mn[i].y;
-            L[0] = L[16] = M[i].x;
-            L[1] = L[17] = M[i].y;
-            L[2] = L[18] = M[i].z;
-            L[3] = L[19] = 1.;
-            L[4] = L[5] = L[6] = L[7] = 0.;
-            L[12] = L[13] = L[14] = L[15] = 0.;
-            L[8] = x * M[i].x;
-            L[9] = x * M[i].y;
-            L[10] = x * M[i].z;
-            L[11] = x;
-            L[20] = y * M[i].x;
-            L[21] = y * M[i].y;
-            L[22] = y * M[i].z;
-            L[23] = y;
+            cvGetCols(matJ, &_dpdr, 0, 3);
+            cvGetCols(matJ, &_dpdt, 3, 6);
+            cvProjectPoints2(matM, &_r, &_t, &matA, 0,
+                             _err, &_dpdr, &_dpdt);
         }
-
-        cvMulTransposed(matL, &_LL, 1);
-        __cvSVD(&_LL, &_LW, 0, &_LV, CV_SVD_MODIFY_A + CV_SVD_V_T);
-        _RRt = cvMat(3, 4, CV_64F, LV + 11 * 12);
-        cvGetCols(&_RRt, &_RR, 0, 3);
-        cvGetCol(&_RRt, &_tt, 3);
-
-        if (cvDet(&_RR) < 0)
+        else
         {
-            cvScale(&_RRt, &_RRt, -1);
+            cvProjectPoints2(matM, &_r, &_t, &matA, 0,
+                             _err, 0, 0);
         }
+        cvSub(_err, _m, _err);
+        cvReshape(_err, _err, 1, 2 * count);
+    }
+    cvCopy(solver.param, &_param);
 
-        sc = cvNorm(&_RR);
-        __cvSVD(&_RR, &matW, &matU, &matV, CV_SVD_MODIFY_A + CV_SVD_U_T + CV_SVD_V_T);
-        // cvGEMM(&matU, &matV, 1, 0, 0, &matR, CV_GEMM_A_T);
-        matR = cvMat(Mat(matU.rows, matU.cols, matU.type, matU.data.db).t() * Mat(matV.rows, matV.cols, matV.type, matV.data.db));
-        cvScale(&_tt, &_t, cvNorm(&matR) / sc);
-        cvRodrigues2(&matR, &_r, 0);
+    _r = cvMat(c_rvec.rows, c_rvec.cols, CV_64F, param);
+    _t = cvMat(c_tvec.rows, c_tvec.cols, CV_64F, param + 3);
 
-        cvReshape(matM, matM, 3, 1);
-        cvReshape(_mn, _mn, 2, 1);
+    cvConvert(&_r, &c_rvec);
+    cvConvert(&_t, &c_tvec);*/
+}
 
-        // refine extrinsic parameters using iterative algorithm
-        CvLevMarq solver(6, count * 2, cvTermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, max_iter, FLT_EPSILON), true);
-        cvCopy(&_param, solver.param);
+LevMarq::LevMarq(int32_t nparams, int32_t nerrs)
+{
+    clear();
+    prevParam = Matrix(nparams, 1);
+    param = Matrix(nparams, 1);
+    JtJ = Matrix(nparams, nparams);
+    JtErr = Matrix(nparams, 1);
+    JtJN = Matrix(nparams, nparams);
+    JtJV = Matrix(nparams, 1);
+    JtJW = Matrix(nparams, 1);
+    J = Matrix(nerrs, nparams);
+    err = Matrix(nerrs, 1);
+    errNorm = prevErrNorm = DBL_MAX;
+    lambdaLg10 = -3;
+    max_iter = 20;
+    epsilon = FLT_EPSILON;
+    state = STARTED;
+    iters = 0;
+}
 
-        for (;;)
+bool LevMarq::update(Matrix &_param, Matrix &matJ, Matrix &_err)
+{
+    for (int32_t i = 0; i < matJ.m; i++)
+        for (int32_t j = 0; j < matJ.n; j++)
+            matJ.val[i][j] = 0.0;
+    for (int32_t i = 0; i < _err.m; i++)
+        for (int32_t j = 0; j < _err.n; j++)
+            _err.val[i][j] = 0.0;
+
+    if (state == DONE)
+    {
+        _param = param;
+        return false;
+    }
+
+    if (state == STARTED)
+    {
+        _param = param;
+        for (int32_t i = 0; i < J.m; i++)
+            for (int32_t j = 0; j < J.n; j++)
+                J.val[i][j] = 0.0;
+        for (int32_t i = 0; i < err.m; i++)
+            for (int32_t j = 0; j < err.n; j++)
+                err.val[i][j] = 0.0;
+        matJ = J;
+        _err = err;
+        state = CALC_J;
+        return true;
+    }
+
+    if (state == CALC_J)
+    {
+        JtJ = J.multrans();
+        JtErr = J.trans() * err;
+        prevParam = param;
+        step();
+        if (iters == 0)
+            prevErrNorm = NORM(err);
+        _param = param;
+        for (int32_t i = 0; i < err.m; i++)
+            for (int32_t j = 0; j < err.n; j++)
+                err.val[i][j] = 0.0;
+        _err = err;
+        state = CHECK_ERR;
+        return true;
+    }
+
+    errNorm = NORM(err);
+    if (errNorm > prevErrNorm)
+    {
+        if (++lambdaLg10 <= 16)
         {
-            CvMat *matJ = 0, *_err = 0;
-            const CvMat *__param = 0;
-            bool proceed = solver.update(__param, matJ, _err);
-            cvCopy(__param, &_param);
-            if (!proceed || !_err)
-                break;
-            cvReshape(_err, _err, 2, 1);
-            if (matJ)
-            {
-                cvGetCols(matJ, &_dpdr, 0, 3);
-                cvGetCols(matJ, &_dpdt, 3, 6);
-                cvProjectPoints2(matM, &_r, &_t, &matA, 0,
-                                 _err, &_dpdr, &_dpdt);
-            }
-            else
-            {
-                cvProjectPoints2(matM, &_r, &_t, &matA, 0,
-                                 _err, 0, 0);
-            }
-            cvSub(_err, _m, _err);
-            cvReshape(_err, _err, 1, 2 * count);
+            step();
+            _param = param;
+            for (int32_t i = 0; i < err.m; i++)
+                for (int32_t j = 0; j < err.n; j++)
+                    err.val[i][j] = 0.0;
+            _err = err;
+            state = CHECK_ERR;
+            return true;
         }
-        cvCopy(solver.param, &_param);
+    }
 
-        _r = cvMat(c_rvec.rows, c_rvec.cols, CV_64F, param);
-        _t = cvMat(c_tvec.rows, c_tvec.cols, CV_64F, param + 3);
+    lambdaLg10 = MAX(lambdaLg10 - 1, -16);
+    if (++iters >= max_iter || (NORM(param - prevParam) / NORM(prevParam) < epsilon))
+    {
+        _param = param;
+        state = DONE;
+        return true;
+    }
 
-        cvConvert(&_r, &c_rvec);
-        cvConvert(&_t, &c_tvec);*/
+    prevErrNorm = errNorm;
+    _param = param;
+    for (int32_t i = 0; i < J.m; i++)
+        for (int32_t j = 0; j < J.n; j++)
+            J.val[i][j] = 0.0;
+    matJ = J;
+    _err = err;
+    state = CALC_J;
+    return true;
+}
+
+void LevMarq::step()
+{
+    const FLOAT LOG10 = log(10.);
+    FLOAT lambda = exp(lambdaLg10 * LOG10);
+    int nparams = param.m;
+
+    JtJN = JtJ;
+    for (int i = 0; i < JtJN.m; i++)
+        JtJN.val[i][i] *= 1. + lambda;
+
+    Matrix::solve(JtJN, JtJW, JtErr);
+}
+
+void LevMarq::clear()
+{
+    prevParam.releaseMemory();
+    param.releaseMemory();
+    J.releaseMemory();
+    err.releaseMemory();
+    JtJ.releaseMemory();
+    JtJN.releaseMemory();
+    JtErr.releaseMemory();
+    JtJV.releaseMemory();
+    JtJW.releaseMemory();
+}
+
+LevMarq::~LevMarq()
+{
+    clear();
 }
