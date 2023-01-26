@@ -101,8 +101,6 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint)
         Matrix rmat, tvec;
         EPnP epnp = EPnP(subopoint, subipoint, fx, fy, cx, cy);
         epnp.compute(rmat, tvec);
-        cout << tvec << endl
-             << endl;
         Matrix projPoint = projectPoint(opoint, rmat, tvec);
         Matrix err = Matrix(count, 1);
         for (int i = 0; i < count; i++)
@@ -139,7 +137,26 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint)
             }
         }
     }
-    cout << maxGoodCount << endl;
+
+    Matrix opoint_inlier = Matrix(maxGoodCount, 3);
+    Matrix ipoint_inlier = Matrix(maxGoodCount, 2);
+    for (int32_t i = 0, j = 0; i < count; i++)
+    {
+        if (best_mask[i])
+        {
+            opoint_inlier.val[j][0] = opoint.val[i][0];
+            opoint_inlier.val[j][1] = opoint.val[i][1];
+            opoint_inlier.val[j][2] = opoint.val[i][2];
+
+            ipoint_inlier.val[j][0] = ipoint.val[i][0];
+            ipoint_inlier.val[j][0] = ipoint.val[i][0];
+            j++;
+        }
+    }
+
+    Matrix rmat, tvec;
+    PnPIterative pnp_iter(opoint_inlier, ipoint_inlier, fx, fy, cx, cy);
+    pnp_iter.compute(rmat, tvec);
 }
 
 Matrix EstimateMotion::projectPoint(Matrix opoints, Matrix rmat, Matrix tvec)

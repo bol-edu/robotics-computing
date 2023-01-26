@@ -64,8 +64,6 @@ void EPnP::compute(Matrix &rmat, Matrix &tvec)
             cws.val[i][j] = cws.val[0][j] + k * UC.val[j][i - 1];
     }
 
-    cout << UC.trans() << endl
-         << endl;
     DC.releaseMemory();
     UC.releaseMemory();
     VC.releaseMemory();

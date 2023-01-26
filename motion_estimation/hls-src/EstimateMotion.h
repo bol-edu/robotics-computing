@@ -1,5 +1,6 @@
 #include "Matrix.h"
 #include "EPnP.h"
+#include "PnPIterative.h"
 #include <stdio.h>
 
 class EstimateMotion
