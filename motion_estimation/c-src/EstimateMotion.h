@@ -17,7 +17,7 @@ private:
     FLOAT fx;
     FLOAT fy;
 
-    void RANSAC_EPnP(Matrix opoint, Matrix ipoint);
+    void RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Matrix &_tvec);
     void getSubset(Matrix opoint, Matrix ipoint, Matrix &subopoint, Matrix &subipoint);
     Matrix projectPoint(Matrix opoint, Matrix rmat, Matrix tvec);
 

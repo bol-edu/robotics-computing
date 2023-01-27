@@ -51,4 +51,6 @@ public:
     int32_t max_iter;
     int32_t state;
     int32_t iters;
+    bool is_matJ;
+    bool is_err;
 };

@@ -85,10 +85,10 @@ void EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1,
     opoint.m = j;
     ipoint.m = j;
 
-    RANSAC_EPnP(opoint, ipoint);
+    RANSAC_EPnP(opoint, ipoint, rmat, tvec);
 }
 
-void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint)
+void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Matrix &_tvec)
 {
     int32_t maxGoodCount = 0;
     int32_t count = opoint.m;
@@ -156,9 +156,8 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint)
         }
     }
 
-    Matrix rmat, tvec;
     PnPIterative pnp_iter(opoint_inlier, ipoint_inlier, fx, fy, cx, cy);
-    pnp_iter.compute(rmat, tvec);
+    pnp_iter.compute(_rmat, _tvec);
 }
 
 Matrix EstimateMotion::projectPoint(Matrix opoints, Matrix rmat, Matrix tvec)
