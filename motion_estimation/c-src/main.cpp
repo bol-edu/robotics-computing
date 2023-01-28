@@ -82,4 +82,10 @@ int main()
     EstimateMotion em = EstimateMotion();
     Matrix rmat, tvec;
     em.estimate(match, kp0, kp1, k, depth, rmat, tvec);
+    cout << "rmat\n"
+         << rmat << endl
+         << endl;
+    cout << "tvec\n"
+         << tvec << endl
+         << endl;
 }

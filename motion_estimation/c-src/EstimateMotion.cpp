@@ -42,18 +42,19 @@ FLOAT POW(FLOAT a, int32_t n)
 
 EstimateMotion::EstimateMotion()
 {
-    max_depth = 3000;
-    model_points = 5;
-    RNG_state = (uint32_t)-1;
-    confidence = 0.99;
-    threshold = 8;
-    maxIter = 1000;
 }
 
 void EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1,
                               Matrix &k, Matrix &depth,
                               Matrix &rmat, Matrix &tvec)
 {
+    max_depth = 3000;
+    model_points = 5;
+    RNG_state = (uint32_t)-1;
+    confidence = 0.99;
+    threshold = 8;
+    maxIter = 1000;
+
     // 2D -> 3D projection
     Matrix opoint(match.m, 3);
     Matrix ipoint(match.m, 2);
@@ -99,10 +100,10 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
     {
         Matrix subopoint, subipoint;
         getSubset(opoint, ipoint, subopoint, subipoint);
-
         Matrix rmat, tvec;
         EPnP epnp = EPnP(subopoint, subipoint, fx, fy, cx, cy);
         epnp.compute(rmat, tvec);
+
         Matrix projPoint = projectPoint(opoint, rmat, tvec);
         Matrix err = Matrix(count, 1);
         for (int i = 0; i < count; i++)
@@ -110,6 +111,7 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
             err.val[i][0] = SQR(ipoint.val[i][0] - projPoint.val[i][0]) +
                             SQR(ipoint.val[i][1] - projPoint.val[i][1]);
         }
+
         bool *mask = new bool[count];
         int32_t goodCount = 0;
         for (int32_t i = 0; i < count; i++)
