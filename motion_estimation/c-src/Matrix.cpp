@@ -380,7 +380,9 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
         if (i < m)
         {
             for (k = i; k < m; k++)
+            {
                 scale += fabs(U.val[k][i]);
+            }
             if (scale)
             {
                 for (k = i; k < m; k++)
@@ -436,6 +438,7 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
         }
         anorm = MAX(anorm, (fabs(w[i]) + fabs(rv1[i])));
     }
+
     for (i = n - 1; i >= 0; i--)
     { // Accumulation of right-hand transformations.
         if (i < n - 1)
@@ -484,6 +487,7 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
                 U.val[j][i] = 0.0;
         ++U.val[i][i];
     }
+
     for (k = n - 1; k >= 0; k--)
     { // Diagonalization of the bidiagonal form: Loop over singular values,
         for (its = 0; its < 30; its++)

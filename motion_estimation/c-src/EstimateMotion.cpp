@@ -71,7 +71,7 @@ void EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1,
     {
         FLOAT u = kp0.val[(int)(match.val[i][0])][0];
         FLOAT v = kp0.val[(int)(match.val[i][0])][1];
-        FLOAT z = depth.val[(int)v][(int)u];
+        FLOAT z = (FLOAT)depth.val[(int)v][(int)u];
         if (z > max_depth)
             continue;
 
@@ -85,7 +85,6 @@ void EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1,
     }
     opoint.m = j;
     ipoint.m = j;
-
     RANSAC_EPnP(opoint, ipoint, rmat, tvec);
 }
 
@@ -100,6 +99,8 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
     {
         Matrix subopoint, subipoint;
         getSubset(opoint, ipoint, subopoint, subipoint);
+
+        cout << "opoint: " << subopoint << endl;
         Matrix rmat, tvec;
         EPnP epnp = EPnP(subopoint, subipoint, fx, fy, cx, cy);
         epnp.compute(rmat, tvec);
@@ -141,6 +142,7 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
             }
         }
     }
+    system("pause");
 
     Matrix opoint_inlier = Matrix(maxGoodCount, 3);
     Matrix ipoint_inlier = Matrix(maxGoodCount, 2);

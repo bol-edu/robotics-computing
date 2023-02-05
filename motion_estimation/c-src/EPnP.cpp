@@ -54,16 +54,16 @@ void EPnP::compute(Matrix &rmat, Matrix &tvec)
     Matrix VC;
     PW0tPW0.svd(UC, DC, VC);
     //  svd(MtM, λ, ν, ...)
-
     PW0.releaseMemory();
 
     for (int i = 1; i < 4; i++)
     {
         double k = sqrt(DC.val[i - 1][0] / number_of_correspondences);
+
+        // cout << "k " << k << endl;
         for (int j = 0; j < 3; j++)
             cws.val[i][j] = cws.val[0][j] + k * UC.val[j][i - 1];
     }
-
     DC.releaseMemory();
     UC.releaseMemory();
     VC.releaseMemory();
