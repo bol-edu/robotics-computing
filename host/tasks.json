@@ -1,0 +1,28 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: cpp.exe 建置使用中檔案",
+            "command": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\cpp.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "偵錯工具產生的工作。"
+        }
+    ],
+    "version": "2.0.0"
+}

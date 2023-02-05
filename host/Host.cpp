@@ -8,173 +8,127 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <vector>
+#include <string>
 
-#include <CL/cl.h>
+#include <CL/opencl.hpp>
+#include <opencv2/opencv.hpp>
+#include <common/xf_headers.hpp>
 #include "Host.h"
-#include "ErrHandler.cpp" 
+#include "BasicFunction.hpp"
 #include "help_functions.h"
-//#include "kernel.h"
 
 using namespace std;
 
 #define INFO
 
+#define OCL_CHECK(error, call)  																			\
+	call;                                                                                           		\
+    if (error != CL_SUCCESS) {                                                                            	\
+        fprintf(stderr, "%s:%d Error calling " #call ", error code is: %d\n", __FILE__, __LINE__, error); 	\
+        exit(EXIT_FAILURE);                                                                               	\
+    }
+
+
 int main(int argc, const char** argv) {
 
-//	Step 1: Check Command Line Arguments
+	//	Check command line arguments, read images and set up parameters
 	#ifdef INFO
 		cout << "HOST-Info: ============================================================= " << endl;
 		cout << "HOST-Info: 				Check Command Line Arguments                  " << endl;
 		cout << "HOST-Info: ============================================================= " << endl;
 	#endif
 
-	if (argc != 4) return ErrHandler(err0, argv[0], EXIT_FAILURE);
-
-	const char *Target_Platform_Vendor = argv[1];
-	const char *Target_Device_Name = argv[2];
-	const char *xclbinFilename = argv[3];
-	cout << "HOST-Info: Platform_Vendor   : " << Target_Platform_Vendor << endl;
-	cout << "HOST-Info: Device_Name       : " << Target_Device_Name << endl;
-	cout << "HOST-Info: XCLBIN_file       : " << xclbinFilename << endl;
+	if (argc != 7){
+		cout << "HOST-Error: Incorrect command line syntax " << endl << endl;
+		return EXIT_FAILURE;
+	}
+	string Target_Platform_Vendor(argv[1]);
+	string Target_Device_Name(argv[2]);
+	string xclbinFilename(argv[3]);
+	string Input_Image_Path_1(argv[4]);
+	string Input_Image_Path_2(argv[5]);
+	string Dataset_Frames_Num(argv[6]);
+	cout << "HOST-Info: Platform_Vendor   	: " << Target_Platform_Vendor << endl;
+	cout << "HOST-Info: Device_Name       	: " << Target_Device_Name << endl;
+	cout << "HOST-Info: XCLBIN_file       	: " << xclbinFilename << endl;
+	cout << "HOST-Info: Input_Image_Path_1  : " << Input_Image_Path_1 << endl;
+	cout << "HOST-Info: Input_Image_Path_2  : " << Input_Image_Path_2 << endl;
+	cout << "HOST-Info: Dataset_Frames_Num  : " << Dataset_Frames_Num << endl;
 	cout << endl;
 
-// Step 2: Detect Target Platform and Target Device in a system.
-//         Create Context and Command Queue.
-// Step 2.1: Get All PLATFORMS, then search for (CL_PLATFORM_VENDOR)
+	vector<cv::Mat> Img_Left_Set, Img_Right_Set;
+	int FRAME_NUM = stoi(Dataset_Frames_Num);
+	for(int i=1; i<=FRAME_NUM; i++){
+		string IMG_NAME("/");
+		IMG_NAME = IMG_NAME + to_string(i) + ".jpg";
+		Img_Left_Set.push_back(cv::imread(Input_Image_Path_1 + IMG_NAME, 0));
+		if(Img_Left_Set[i-1].data==NULL){
+			cout << "HOST-Error: Failed to open image " << Input_Image_Path_1 << IMG_NAME << endl << endl;
+			return EXIT_FAILURE;
+		}
+		if(!Img_Left_Set[i-1].isContinuous()){
+			cout << "HOST-Error: Discontinuous Image " << Input_Image_Path_1 << IMG_NAME << "" << endl << endl;
+			return EXIT_FAILURE;
+		}
+		Img_Right_Set.push_back(cv::imread(Input_Image_Path_2 + IMG_NAME, 0));
+		if(Img_Right_Set[i-1].data==NULL){
+			cout << "HOST-Error: Failed to open image " << Input_Image_Path_2 << IMG_NAME << endl << endl;
+			return EXIT_FAILURE;
+		}
+		if(!Img_Right_Set[i-1].isContinuous()){
+			cout << "HOST-Error: Discontinuous Image " << Input_Image_Path_2 << IMG_NAME << "" << endl << endl;
+			return EXIT_FAILURE;
+		}
+	}
+	// Copy the data of images to a consecutive dynamic allocated array
+	uchar* Img_Left_Arr = new uchar[FRAME_NUM * (Img_Left_Set[0].total())];
+	uchar* Img_Right_Arr = new uchar[FRAME_NUM * (Img_Right_Set[0].total())];
+	for(int i=0; i<FRAME_NUM; i++){
+		uchar* psrc_l = Img_Left_Set[i].data;
+		uchar* psrc_r = Img_Right_Set[i].data;
+		uchar* pdst_l = Img_Left_Arr + Img_Left_Set[0].total() * i;
+		uchar* pdst_r = Img_Left_Arr + Img_Right_Set[0].total() * i;
+		memcpy(pdst_l, psrc_l, Img_Left_Set[0].total() * sizeof(uchar));
+		memcpy(pdst_r, psrc_r, Img_Right_Set[0].total() * sizeof(uchar));
+	}
+
 	
-	// Get the number of platforms
+
+	size_t image_in_size_bytes = Img_Left_Set[0].rows * Img_Left_Set[0].cols * sizeof(uchar);
+
+    int height = in_imgL.rows;
+    int width = in_imgL.cols;
+    cout << "HOST-Info: Input image height : " << height << endl;
+    cout << "HOST-Info: Input image width  : " << width << endl;
+
+
+	// OpenCL section
 	#ifdef INFO
 		cout << "HOST-Info: ============================================================= " << endl;
-		cout << "HOST-Info:     Detect Target Platform and Target Device in a system 	  " << endl;
-		cout << "HOST-Info:          	Create Context and Command Queue                  " << endl;
+		cout << "HOST-Info:     				Run OpenCL Section 	  					  " << endl;
 		cout << "HOST-Info: ============================================================= " << endl;
 	#endif
-
-	cl_uint ui;                        
-
-	cl_platform_id *Platform_IDs;          
-	cl_uint Num_Platforms;
-	cl_platform_id Target_Platform_ID;
-	bool Platform_Detected;
-	char *platform_info;
-
-	cl_device_id *Device_IDs;
-	cl_uint Num_Devices;
-	cl_device_id Target_Device_ID;
-	bool Device_Detected;
-	char *device_info;
-
-	cl_context Context;
-	cl_command_queue Command_Queue;
 
 	cl_int errCode;
-	size_t size;
 
-	// Get the number of platforms
-	errCode = clGetPlatformIDs(0, NULL, &Num_Platforms);
-	if(errCode != CL_SUCCESS || Num_Platforms <= 0) return ErrHandler(err1, nullptr, EXIT_FAILURE);
+	// Get the list of Devices of the given Platform 
+	vector<cl::Device> Devices = BasicFunction::get_devices_of_platform(Target_Platform_Vendor);
+	// Get the Specific Device 
+	cl::Device Device = BasicFunction::get_specific_device(Target_Device_Name, Devices);
 
-	#ifdef INFO
-		cout << "HOST-Info: Number of detected platforms : " << Num_Platforms << endl;
-	#endif
 
- 	// Allocate memory to store platforms
-	Platform_IDs = new cl_platform_id[Num_Platforms];
-	if(!Platform_IDs) return ErrHandler(err2, nullptr, EXIT_FAILURE);
+	// Create context, command queue and device name
+	OCL_CHECK(errCode, cl::Context Context(Device, NULL, NULL, NULL, &errCode));								
+	OCL_CHECK(errCode, cl::CommandQueue Queue(Context, Device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_PROFILING_ENABLE, &errCode));
 
-	#ifdef INFO
-		cout << "HOST-Info: Number of detected platforms : " << Num_Platforms << endl;
-	#endif
+	string Device_Name = Device.getInfo<CL_DEVICE_NAME>(&errCode); 
+	OCL_CHECK(errCode, Device.getInfo<CL_DEVICE_NAME>(&errCode));
 
-	// Get and store all PLATFORMS
-	errCode = clGetPlatformIDs(Num_Platforms, Platform_IDs, NULL);
-	if(errCode != CL_SUCCESS) return ErrHandler(err3, nullptr, EXIT_FAILURE);
-
-	// Search for Platform using: CL_PLATFORM_VENDOR = Target_Platform_Vendor
-	Platform_Detected = false;
-	for (ui = 0; ui < Num_Platforms; ui++){
-
-		errCode = clGetPlatformInfo(Platform_IDs[ui], CL_PLATFORM_VENDOR, 0, NULL, &size);
-		if (errCode != CL_SUCCESS) return ErrHandler(err4, nullptr, EXIT_FAILURE);
-
-		platform_info = new char[size];
-		if (!platform_info) return ErrHandler(err5, nullptr, EXIT_FAILURE);
-
-		errCode = clGetPlatformInfo(Platform_IDs[ui], CL_PLATFORM_VENDOR, size, platform_info, NULL);
-		if (errCode != CL_SUCCESS) return ErrHandler(err6, nullptr, EXIT_FAILURE);
-
-		// Check if the current platform matches Target_Platform_Vendor
-		if (strcmp(platform_info, Target_Platform_Vendor) == 0){
-			Platform_Detected = true;
-			Target_Platform_ID = Platform_IDs[ui];
-			#ifdef INFO
-						cout << "HOST-Info: Selected platform: " << Target_Platform_Vendor << endl
-							<< endl;
-			#endif
-		}
-	}
-	if (Platform_Detected == false) return ErrHandler(err7, Target_Platform_Vendor, EXIT_FAILURE);
-
-//			  Get All Devices for selected platform Target_Platform_ID
-//            then search for Xilinx platform (CL_DEVICE_NAME = Target_Device_Name)
-
-	// Get the Number of Devices
-	errCode = clGetDeviceIDs(Target_Platform_ID, CL_DEVICE_TYPE_ALL, 0, NULL, &Num_Devices);
-	if (errCode != CL_SUCCESS)  return ErrHandler(err8, nullptr, EXIT_FAILURE);
-	
-	#ifdef INFO
-		cout << "HOST-Info: Number of available devices  : " << Num_Devices << endl;
-	#endif
-
-	// Allocate memory and store devices
-	Device_IDs = new cl_device_id[Num_Devices];
-	if (!Device_IDs) return ErrHandler(err9, nullptr, EXIT_FAILURE);
-
-	errCode = clGetDeviceIDs(Target_Platform_ID, CL_DEVICE_TYPE_ALL, Num_Devices, Device_IDs, NULL);
-	if (errCode != CL_SUCCESS) return ErrHandler(err10, nullptr, EXIT_FAILURE);
-	
-	// Search for CL_DEVICE_NAME = Target_Device_Name
-	Device_Detected = false;
-	for (ui = 0; ui < Num_Devices; ui++){
-		errCode = clGetDeviceInfo(Device_IDs[ui], CL_DEVICE_NAME, 0, NULL, &size);
-		if (errCode != CL_SUCCESS) return ErrHandler(err11, nullptr, EXIT_FAILURE);
-
-		device_info = new char[size];
-		if (!device_info) return ErrHandler(err12, nullptr, EXIT_FAILURE);
-	
-		errCode = clGetDeviceInfo(Device_IDs[ui], CL_DEVICE_NAME, size, device_info, NULL);
-		if (errCode != CL_SUCCESS) return ErrHandler(err13, nullptr, EXIT_FAILURE);
-
-		// Check if the current device matches Target_Device_Name
-		if (strcmp(device_info, Target_Device_Name) == 0){
-			Device_Detected = true;
-			Target_Device_ID = Device_IDs[ui];
-		}
-	}
-
-	if (Device_Detected == false) return ErrHandler(err14, Target_Device_Name, EXIT_FAILURE);
-	else{
-		#ifdef INFO
-			cout << "HOST-Info: Selected device: " << Target_Device_Name << endl
-		 		 << endl;
-		#endif
-	}
-
-// Create Context
-
-	#ifdef INFO
-		cout << "HOST-Info: Creating Context ... " << endl;
-	#endif
-	Context = clCreateContext(0, 1, &Target_Device_ID, NULL, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err15, nullptr, EXIT_FAILURE);
-
-// Create Command Queue (commands are executed in-order)
-	#ifdef INFO
-		cout << "HOST-Info: Creating Command Queue ... " << endl;
-	#endif
-	Command_Queue = clCreateCommandQueue(Context, Target_Device_ID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_PROFILING_ENABLE, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err16, nullptr, EXIT_FAILURE);
-
+	cout << "INFO: Device found - " << Device_Name << endl;
+    cout << "Input Image Bit Depth:" << XF_DTPIXELDEPTH(IN_TYPE, NPC1) << endl;
+    cout << "Input Image Channels:" << XF_CHANNELS(IN_TYPE, NPC1) << endl;
+    cout << "NPPC:" << NPC1 << endl;
 
 // Create Program and Kernel
 	#ifdef INFO
@@ -184,239 +138,67 @@ int main(int argc, const char** argv) {
 		cout << "HOST-Info: ============================================================= " << endl;
 	#endif
 
-// Load Binary File from a disk to Memory
-	unsigned char *xclbin_Memory;
-	int program_length;
+// Load binary file to memory and create program
+	cl::Program::Binaries xcl_Binaries = BasicFunction::import_binary_file(xclbinFilename);
+	Devices.clear();
+	Devices.push_back(Device);
+	Devices.resize(1);
+	OCL_CHECK(errCode, cl::Program Program(Context, Devices, xcl_Binaries, NULL, &errCode));
 
-	#ifdef INFO
-		cout << "HOST-Info: Loading " << xclbinFilename << " binary file to memory ..." << endl;
-	#endif
+// Create a kernels
+	OCL_CHECK(errCode, cl::Kernel K_StereoMatching(Program, "K_StereoMatching", &errCode));
+	OCL_CHECK(errCode, cl::Kernel K_FeatureExtraction(Program, "K_FeatureExtraction", &errCode));
+	OCL_CHECK(errCode, cl::Kernel K_FeatureTracking(Program, "K_FeatureTracking", &errCode));
+	OCL_CHECK(errCode, cl::Kernel K_MotionEstimation(Program, "K_MotionEstimation", &errCode));
 
-	program_length = loadFile2Memory(xclbinFilename, (char **)&xclbin_Memory);
-	if (program_length < 0) return ErrHandler(err17, xclbinFilename, EXIT_FAILURE);
+/*
+1 CL_MEM_READ_WRITE：在device上開闢一段kernal可讀可寫的內存，這是默認
+2 CL_MEM_WRITE_ONLY：在device上開闢一段kernal只可以寫的內存
+3 CL_MEM_READ_ONLY：在device上開闢一段kernal只可以讀的內存
 
-// Create a program using a Binary File
-	size_t Program_Length_in_Bytes;
-	cl_program Program;
-	cl_int Binary_Status;
+4 CL_MEM_USE_HOST_PTR：直接使用host上一段已經分配的mem供device使用，注意：這裡雖然是用了host上已經存在的內存，但是這個內存的值不一定會和經過kernal函數計算後的實際的值，即使用clEnqueueReadBuffer函數拷貝回的內存和原本的內存是不一樣的，或者可以認為opencl雖然借用了這塊內存作為cl_mem，但是並不保證同步的，不過初始的值是一樣的，（可以使用mapmem等方式來同步）
+5 CL_MEM_ALLOC_HOST_PTR：在host上新開闢一段內存供device使用
+6 CL_MEM_COPY_HOST_PTR：在device上開闢一段內存供device使用，並賦值為host上一段已經存在的mem
+ 
+7 CL_MEM_HOST_WRITE_ONLY:這塊內存是host只可寫的
+8 CL_MEM_HOST_READ_ONLY:這塊內存是host只可讀的
+9 CL_MEM_HOST_NO_ACCESS:這塊內存是host可讀可寫的
+*/
 
-	#ifdef INFO
-		cout << "HOST-Info: Creating Program with Binary ..." << endl;
-	#endif
-	Program_Length_in_Bytes = program_length;
-	Program = clCreateProgramWithBinary(Context, 1, &Target_Device_ID, &Program_Length_in_Bytes,
-										(const unsigned char **)&xclbin_Memory, &Binary_Status, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err18, nullptr, EXIT_FAILURE);
-
-// Build (compiles and links) a program executable from binary
-	#ifdef INFO
-		cout << "HOST-Info: Building the Program ..." << endl;
-	#endif
-
-	errCode = clBuildProgram(Program, 1, &Target_Device_ID, NULL, NULL, NULL);
-	if (errCode != CL_SUCCESS) return ErrHandler(err19, nullptr, EXIT_FAILURE);
-	
-// Create a Kernels
-	cl_kernel K_StereoMatching, K_FeatureExtraction, K_FeatureTracking, K_MotionEstimation;
-
-	#ifdef INFO
-		cout << "HOST-Info: Creating a Kernel: K_StereoMatching ..." << endl;
-	#endif
-	K_StereoMatching = clCreateKernel(Program, "K_StereoMatching", &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err20, nullptr, EXIT_FAILURE);
-
-	#ifdef INFO
-		cout << "HOST-Info: Creating a Kernel: K_FeatureExtract ..." << endl;
-	#endif
-	K_FeatureExtract = clCreateKernel(Program, "K_FeatureExtract", &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err21, nullptr, EXIT_FAILURE);
-
-	#ifdef INFO
-		cout << "HOST-Info: Creating a Kernel: K_FeatureTracker ..." << endl;
-	#endif
-	K_FeatureTracker = clCreateKernel(Program, "K_FeatureTracker", &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err22, nullptr, EXIT_FAILURE);
-
-	#ifdef INFO
-		cout << "HOST-Info: Creating a Kernel: K_MotionEstimation ..." << endl;
-	#endif
-	K_MotionEstimation = clCreateKernel(Program, "K_MotionEstimation", &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err23, nullptr, EXIT_FAILURE);
-
-// Prepare Data to Run Kernel
-	int *ImgLeft_0, *ImgRight_0, *ImgLeft_1, *Mask, *K_Left, *T_Left, *T_Right, *Filter, *T_Mat;
-
+uchar *ImgLeft_0=Img_Left_Arr, *ImgRight_0=Img_Right_Arr, *ImgLeft_1=Img_Left_Arr;
+uchar *Mask, *K_Left, *T_Left, *T_Right, *Filter, *T_Mat;
+int ConstArg_K, ConstArg_MaxDepth
 	#ifdef INFO
 		cout << endl;
 		cout << "HOST-Info: ============================================================= " << endl;
-		cout << "HOST-Info:                 Prepare Data to Run Kernels                   " << endl;
+		cout << "HOST-Info:              Create Buffer and Set Kernel Args                " << endl;
 		cout << "HOST-Info: ============================================================= " << endl;
 	#endif
+// Allocate the buffers
+	// does it need enqueuebuffer to sync?
+	OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_0 (Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_ImgLeft_0, 	*ImgLeft_0, 	&errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_ImgRight_0(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_ImgRight_0, 	*ImgRight_0, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_1	(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_ImgLeft_1, 	*ImgLeft_1, 	&errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_Mask		(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_Mask, 		*Mask, 		&errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left	(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_K_Left, 		*K_Left, 	&errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_T_Left	(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_T_Left, 		*T_Left, 	&errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_T_Right	(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_T_Right, 	*T_Right, 	&errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_Filter	(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_Filter, 		*Filter, 	&errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_T_Mat		(Context, /*CL_MEM_READ_ONLY |*/ CL_MEM_USE_HOST_PTR, SIZE_T_Mat, 		*T_Mat, 		&errCode));
 
-//			 Generate data for ImgLeft_0, ImgRight_0, ImgLeft_1, Mask, K_Left, T_Left, K_Left, Filter array
-//           Allocate Memory to store the results: T_Mat array
-	cl_uint ConstArg_MaxDepth = MaxDepth;
-	cl_uint ConstArg_K = K;
-	void *ptr = nullptr;
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Depth				(Context, /*CL_MEM_READ_WRITE?*/CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_Depth, 			NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_KP0				(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_KP0, 				NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_KP1				(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_KP1, 				NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Des0				(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_Des0, 			NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Des1				(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_Des1, 			NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Detected_Points	(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_Detected_Points, 	NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Matches			(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_Matches, 			NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Detected_Matches	(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_Detected_Matches, NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_rmat				(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_rmat, 			NULL, &errCode));
+	OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_tvec				(Context, CL_MEM_ALLOC_HOST_PTR, SIZE_BUF_tvec, 			NULL, &errCode));
 
-	// SIZE_XXXX are in byte
-	cout << "HOST-Info: Preparing data for ImgLeft_0 ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_ImgLeft_0)) return ErrHandler(err24, nullptr, EXIT_FAILURE);
-	ImgLeft_0 = reinterpret_cast<Img_Type *>(ptr);
-	cout << "Generated " << SIZE_ImgLeft_0 << " bytes value" << endl;
-
-	cout << "HOST-Info: Preparing data for ImgRight_0 ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_ImgRight_0)) return ErrHandler(err25, nullptr, EXIT_FAILURE);
-	ImgRight_0 = reinterpret_cast<Img_Type *>(ptr);
-	cout << "Generated " << SIZE_ImgRight_0 << " values" << endl;
-
-	cout << "HOST-Info: Preparing data for ImgLeft_1 ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_ImgLeft_1)) return ErrHandler(err26, nullptr, EXIT_FAILURE);
-	ImgLeft_1 = reinterpret_cast<Img_Type *>(ptr);
-	cout << "Generated " << SIZE_ImgLeft_1 << " values" << endl;
-
-	cout << "HOST-Info: Preparing data for Mask ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_Mask)) return ErrHandler(err27, nullptr, EXIT_FAILURE);
-	Mask = reinterpret_cast<Mask_Type *>(ptr);
-	cout << "Generated " << SIZE_Mask << " values" << endl;
-
-	cout << "HOST-Info: Preparing data for K_Left ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_K_Left)) return ErrHandler(err28, nullptr, EXIT_FAILURE);
-	K_Left = reinterpret_cast<Mat_P_Type *>(ptr);
-	cout << "Generated " << SIZE_K_Left << " values" << endl;
-
-	cout << "HOST-Info: Preparing data for T_Left ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_T_Left)) return ErrHandler(err29, nullptr, EXIT_FAILURE);
-	T_Left = reinterpret_cast<Mat_P_Type *>(ptr);
-	cout << "Generated " << SIZE_T_Left << " values" << endl;
-
-	cout << "HOST-Info: Preparing data for T_Right ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_T_Right)) return ErrHandler(err30, nullptr, EXIT_FAILURE);
-	T_Right = reinterpret_cast<Mat_P_Type *>(ptr);
-	cout << "Generated " << SIZE_T_Right << " values" << endl;
-
-	cout << "HOST-Info: Preparing data for Filter ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_Filter)) return ErrHandler(err31, nullptr, EXIT_FAILURE);
-	Filter = reinterpret_cast<Filter_Type *>(ptr);
-	cout << "Generated " << SIZE_Filter << " values" << endl;
-
-	cout << "HOST-Info: Allocating memory for T_Mat ... ";
-	if (posix_memalign(&ptr, 4096, SIZE_T_Mat)) return ErrHandler(err32, nullptr, EXIT_FAILURE);
-	T_Mat = reinterpret_cast<T_Mat_Type *>(ptr);
-	cout << "Generated " << SIZE_T_Mat << " values" << endl;
-
-
-	cout << "Allocated" << endl;
-
-// Create Buffers in Global Memory to store data
-// 			GlobMem_ImgLeft_0				
-// 			GlobMem_ImgRight_0
-// 			GlobMem_ImgLeft_1
-// 			GlobMem_Mask
-// 			GlobMem_K_Left
-// 			GlobMem_T_Left
-// 			GlobMem_T_Right
-// 			GlobMem_Filter
-// 			GlobMem_T_Mat
-// 			GlobMem_BUF_Depth			
-//			GlobMem_BUF_KP0
-//			GlobMem_BUF_KP1
-//			GlobMem_BUF_Des0
-//			GlobMem_BUF_Des1
-//			GlobMem_BUF_Detected_Points
-//			GlobMem_BUF_Matches
-//			GlobMem_BUF_Detected_Matches
-
-#ifdef INFO
-	cout << "HOST-Info: Allocating buffers in Global Memory to store Input and Output Data ..." << endl;
-#endif
-	cl_mem GlobMem_ImgLeft_0, GlobMem_ImgRight_0, GlobMem_ImgLeft_1, GlobMem_Mask,
-			GlobMem_K_Left, GlobMem_T_Left, GlobMem_T_Right, GlobMem_Filter, GlobMem_T_Mat,
-			GlobMem_BUF_Depth, GlobMem_BUF_KP0, GlobMem_BUF_KP1, GlobMem_BUF_Des0, GlobMem_BUF_Des1,
-			GlobMem_BUF_Detected_Points, GlobMem_BUF_Matches, GlobMem_BUF_Detected_Matches, GlobMem_BUF_rmat, GlobMem_BUF_tvec;
-	
-	// reference for clCreateBuffer 
-	// https://stackoverflow.com/questions/61578885/whats-the-purpose-of-host-ptr-parameter-in-clcreatebuffer
-	// https://www.twblogs.net/a/5b89bb3d2b71775d1ce384bf
-
-	// Allocate Global Memory for GlobMem_ImgLeft_0
-	GlobMem_ImgLeft_0 = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_ImgLeft_0, ImgLeft_0, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err33, nullptr, EXIT_FAILURE);
-
-	// Allocate Global Memory for GlobMem_ImgRight_0
-	GlobMem_ImgRight_0 = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_ImgRight_0, ImgRight_0, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err34, nullptr, EXIT_FAILURE);
-
-	// Allocate Global Memory for GlobMem_ImgLeft_1
-	GlobMem_ImgLeft_1 = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_ImgLeft_1, ImgLeft_1, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err35, nullptr, EXIT_FAILURE);
-
-	// Allocate Global Memory for GlobMem_Mask
-	GlobMem_Mask = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_Mask, Mask, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err36, nullptr, EXIT_FAILURE);
-
-	// Allocate Global Memory for GlobMem_K_Left
-	GlobMem_K_Left = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_K_Left, K_Left, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err37, nullptr, EXIT_FAILURE);
-
-	// Allocate Global Memory for GlobMem_T_Left
-	GlobMem_T_Left = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_T_Left, T_Left, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err38, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_T_Right
-	GlobMem_T_Right = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_T_Right, T_Right, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err39, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_Filter
-	GlobMem_Filter = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, SIZE_Filter, Filter, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err40, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_T_Mat
-	GlobMem_T_Mat = clCreateBuffer(Context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, SIZE_T_Mat, T_Mat, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err41, nullptr, EXIT_FAILURE);
-	
-
-	
-	// Allocate Global Memory for GlobMem_BUF_Depth
-	GlobMem_BUF_Depth = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_Depth, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err42, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_BUF_KP0
-	GlobMem_BUF_KP0 = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_KP0, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err43, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_BUF_KP1
-	GlobMem_BUF_KP1 = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_KP1, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err44, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_BUF_Des0
-	GlobMem_BUF_Des0 = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_Des0, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err45, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_BUF_Des1
-	GlobMem_BUF_Des1 = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_Des1, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err46, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_BUF_Detected_Points
-	GlobMem_BUF_Detected_Points = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_Detected_Points, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err47, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_BUF_Matches
-	GlobMem_BUF_Matches = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_Matches, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err48, nullptr, EXIT_FAILURE);
-	
-	// Allocate Global Memory for GlobMem_BUF_Detected_Matches
-	GlobMem_BUF_Detected_Matches = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_Detected_Matches, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err49, nullptr, EXIT_FAILURE);
-
-	// Allocate Global Memory for GlobMem_BUF_rmat
-	GlobMem_BUF_rmat = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_rmat, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err50, nullptr, EXIT_FAILURE);
-
-	// Allocate Global Memory for GlobMem_BUF_tvec
-	GlobMem_BUF_tvec = clCreateBuffer(Context, CL_MEM_READ_WRITE, SIZE_BUF_tvec, NULL, &errCode);
-	if (errCode != CL_SUCCESS) return ErrHandler(err51, nullptr, EXIT_FAILURE);
-	
+// Set kernel arguments
+/*
 	// =======================================================================================================================================
 	// Set Kernel Arguments and Run the Application
 	//				----------------------------------------------------------------
@@ -467,8 +249,51 @@ int main(int argc, const char** argv) {
 	//					You need to write GlobMem_BUF_rmat, GlobMem_BUF_tvec by address, not returning value.
 	// 				----------------------------------------------------------------	
 	// =======================================================================================================================================
+*/
+	OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(0, GlobMem_ImgLeft_0));
+	OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(1, GlobMem_ImgRight_0));
+	OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(2, GlobMem_K_Left));
+	OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(3, GlobMem_T_Left));
+	OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(4, GlobMem_T_Right));
+	OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(5, GlobMem_BUF_Depth));
+
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(0, GlobMem_ImgLeft_0));
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_ImgLeft_1));
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_Mask));
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_BUF_KP0));
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(4, GlobMem_BUF_KP1));
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(5, GlobMem_BUF_Des0));
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(6, GlobMem_BUF_Des1));
+	OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(7, GlobMem_BUF_Detected_Points));
+
+	OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(0, GlobMem_Filter));
+	OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(1, GlobMem_BUF_Des0));
+	OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(2, GlobMem_BUF_Des1));
+	OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(3, GlobMem_BUF_Detected_Points));
+	OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(4, GlobMem_BUF_Matches));
+	OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(5, GlobMem_BUF_Detected_Matches));
+	OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(6, ConstArg_K));
+
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(0, GlobMem_K_Left));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(1, GlobMem_BUF_Depth));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(2, GlobMem_BUF_Matches));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(3, GlobMem_BUF_Detected_Matches));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(4, GlobMem_BUF_KP0));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(5, GlobMem_BUF_KP1));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(6, GlobMem_BUF_rmat));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, GlobMem_BUF_tvec));
+	OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(8, ConstArg_MaxDepth));
+
+	
+	// reference for clCreateBuffer 
+	// https://stackoverflow.com/questions/61578885/whats-the-purpose-of-host-ptr-parameter-in-clcreatebuffer
+	// https://www.twblogs.net/a/5b89bb3d2b71775d1ce384bf
+
+	
 	int Num_Mem_Events = 20, Num_Exe_Events = 4;
-	cl_event Mem_op_event[Num_Mem_Events],K_exe_event[Num_Exe_Events];
+	vector<cl::Event> Krnl_Event_List(Num_Exe_Events);
+	cl::Event K_StereoMatching_Event, K_FeatureExtraction_Event, K_FeatureTracking_Event, K_MotionEstimation_Event;
+
 
 #ifdef INFO
 	cout << endl;
@@ -477,157 +302,21 @@ int main(int argc, const char** argv) {
 	cout << "HOST-Info: ============================================================= " << endl;
 #endif
 
-// Set Kernel Arguments
-#ifdef INFO
-	cout << "HOST-Info: Setting Kernel arguments ..." << endl;
-#endif
+	// Submit Kernels for Execution
+	for(int i=0; i<FRAME_NUM; i++){
+		
+		OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_StereoMatching, NULL, &K_StereoMatching_Event));
+		Krnl_Event_List[0] = K_StereoMatching_Event;
+		OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_FeatureExtraction, &Krnl_Event_List, &K_FeatureExtraction_Event));
+		Krnl_Event_List[0] = K_FeatureExtraction_Event;
+		OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_FeatureTracking, &Krnl_Event_List, &K_FeatureTracking_Event));
+		Krnl_Event_List[0] = K_FeatureTracking_Event;
+		OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_MotionEstimation, &Krnl_Event_List, &K_MotionEstimation_Event));
+		Krnl_Event_List[0] = K_MotionEstimation_Event;
+		Queue.finish();
+	}
 
-	errCode = false;
-
-	errCode |= clSetKernelArg(K_StereoMatching, 0, sizeof(cl_mem), &GlobMem_ImgLeft_0);
-	errCode |= clSetKernelArg(K_StereoMatching, 1, sizeof(cl_mem), &GlobMem_ImgRight_0);
-	errCode |= clSetKernelArg(K_StereoMatching, 2, sizeof(cl_mem), &GlobMem_K_Left);
-	errCode |= clSetKernelArg(K_StereoMatching, 3, sizeof(cl_mem), &GlobMem_T_Left);
-	errCode |= clSetKernelArg(K_StereoMatching, 4, sizeof(cl_mem), &GlobMem_T_Right);
-	errCode |= clSetKernelArg(K_StereoMatching, 5, sizeof(cl_mem), &GlobMem_BUF_Depth);
-
-	errCode |= clSetKernelArg(K_FeatureExtraction, 0, sizeof(cl_mem), &GlobMem_ImgLeft_0);
-	errCode |= clSetKernelArg(K_FeatureExtraction, 1, sizeof(cl_mem), &GlobMem_ImgLeft_1);
-	errCode |= clSetKernelArg(K_FeatureExtraction, 2, sizeof(cl_mem), &GlobMem_Mask);
-	errCode |= clSetKernelArg(K_FeatureExtraction, 3, sizeof(cl_mem), &GlobMem_BUF_KP0);
-	errCode |= clSetKernelArg(K_FeatureExtraction, 4, sizeof(cl_mem), &GlobMem_BUF_KP1);
-	errCode |= clSetKernelArg(K_FeatureExtraction, 5, sizeof(cl_mem), &GlobMem_BUF_Des0);
-	errCode |= clSetKernelArg(K_FeatureExtraction, 6, sizeof(cl_mem), &GlobMem_BUF_Des1);
-	errCode |= clSetKernelArg(K_FeatureExtraction, 7, sizeof(cl_mem), &GlobMem_BUF_Detected_Points);
-
-	errCode |= clSetKernelArg(K_FeatureTracking, 0, sizeof(cl_mem), &GlobMem_Filter);
-	errCode |= clSetKernelArg(K_FeatureTracking, 1, sizeof(cl_mem), &GlobMem_BUF_Des0);
-	errCode |= clSetKernelArg(K_FeatureTracking, 2, sizeof(cl_mem), &GlobMem_BUF_Des1);
-	errCode |= clSetKernelArg(K_FeatureTracking, 3, sizeof(cl_mem), &GlobMem_BUF_Detected_Points);
-	errCode |= clSetKernelArg(K_FeatureTracking, 4, sizeof(cl_mem), &GlobMem_BUF_Matches);
-	errCode |= clSetKernelArg(K_FeatureTracking, 5, sizeof(cl_mem), &GlobMem_BUF_Detected_Matches);
-	errCode |= clSetKernelArg(K_FeatureTracking, 6, sizeof(cl_uint), &ConstArg_K);
-
-	errCode |= clSetKernelArg(K_MotionEstimation, 0, sizeof(cl_mem), &GlobMem_K_Left);
-	errCode |= clSetKernelArg(K_MotionEstimation, 1, sizeof(cl_mem), &GlobMem_BUF_Depth);
-	errCode |= clSetKernelArg(K_MotionEstimation, 2, sizeof(cl_mem), &GlobMem_BUF_Matches);
-	errCode |= clSetKernelArg(K_MotionEstimation, 3, sizeof(cl_mem), &GlobMem_BUF_Detected_Matches);
-	errCode |= clSetKernelArg(K_MotionEstimation, 4, sizeof(cl_mem), &GlobMem_BUF_KP0);
-	errCode |= clSetKernelArg(K_MotionEstimation, 5, sizeof(cl_mem), &GlobMem_BUF_KP1);
-	errCode |= clSetKernelArg(K_MotionEstimation, 6, sizeof(cl_mem), &GlobMem_BUF_rmat);
-	errCode |= clSetKernelArg(K_MotionEstimation, 7, sizeof(cl_mem), &GlobMem_BUF_tvec);
-	errCode |= clSetKernelArg(K_MotionEstimation, 8, sizeof(cl_uint), &ConstArg_MaxDepth);
-
-	if (errCode != CL_SUCCESS) return ErrHandler(err52, nullptr, EXIT_FAILURE)
-
-#ifdef INFO
-	cout << "HOST_Info: Copy Input data to Global Memory ..." << endl;
-#endif
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_ImgLeft_0, 0, 0, NULL, &Mem_op_event[0]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err53, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_ImgRight_0, 0, 0, NULL, &Mem_op_event[1]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err54, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_ImgLeft_1, 0, 0, NULL, &Mem_op_event[2]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err55, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_Mask, 0, 0, NULL, &Mem_op_event[3]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err56, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_K_Left, 0, 0, NULL, &Mem_op_event[4]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err57, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_T_Left, 0, 0, NULL, &Mem_op_event[5]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err58, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_T_Right, 0, 0, NULL, &Mem_op_event[6]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err59, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_Filter, 0, 0, NULL, &Mem_op_event[7]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err60, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_T_Mat, 0, 0, NULL, &Mem_op_event[8]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err61, nullptr, EXIT_FAILURE);
-
-	// --------------------------------------------------------
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_Depth, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[9]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err62, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_KP0, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[10]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err63, nullptr, EXIT_FAILURE);
 	
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_KP1, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[11]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err64, nullptr, EXIT_FAILURE);
-	
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_Des0, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[12]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err65, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_Des1, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[13]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err66, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_Detected_Points, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[14]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err67, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_Matches, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[15]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err68, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_Detected_Matches, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[16]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err69, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_rmat, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[17]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err70, nullptr, EXIT_FAILURE);
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_tvec, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0, NULL, &Mem_op_event[18]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err71, nullptr, EXIT_FAILURE);
-
-	// --------------------------------------------------------
-
-	errCode = clEnqueueBarrierWithWaitList(Command_Queue, 0, NULL, NULL);
-	if (errCode != CL_SUCCESS) return ErrHandler(err72, nullptr, EXIT_FAILURE);
-
-
-// Submit Kernels for Execution
-#ifdef INFO
-	cout << "HOST-Info: Submitting Kernel StereoMatching ..." << endl;
-#endif
-	errCode = clEnqueueTask(Command_Queue, K_StereoMatching, 0, NULL, &K_exe_event[0]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err73, nullptr, EXIT_FAILURE);
-
-#ifdef INFO
-	cout << "HOST-Info: Submitting Kernel FeatureExtraction ..." << endl;
-#endif
-	errCode = clEnqueueTask(Command_Queue, K_FeatureExtraction, 1, &K_exe_event[0], &K_exe_event[1]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err74, nullptr, EXIT_FAILURE);
-
-#ifdef INFO
-	cout << "HOST-Info: Submitting Kernel FeatureTracking ..." << endl;
-#endif
-	errCode = clEnqueueTask(Command_Queue, K_FeatureTracking, 1, &K_exe_event[1], &K_exe_event[2]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err75, nullptr, EXIT_FAILURE);
-
-#ifdef INFO
-	cout << "HOST-Info: Submitting Kernel MotionEstimation ..." << endl;
-#endif
-	errCode = clEnqueueTask(Command_Queue, K_MotionEstimation, 1, &K_exe_event[2], &K_exe_event[3]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err76, nullptr, EXIT_FAILURE);
-	
-
-// Submit Copy Results from Global Memory to Host
-
-#ifdef INFO
-	cout << "HOST_Info: Submitting Copy Results data from Global Memory to Host ..." << endl;
-#endif
-
-	errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_T_Mat, CL_MIGRATE_MEM_OBJECT_HOST, 1, &K_exe_event[4], &Mem_op_event[7]);
-	if (errCode != CL_SUCCESS) return ErrHandler(err77, nullptr, EXIT_FAILURE);
-
-	cout << endl
-		 << "HOST_Info: Waiting for application to be completed ..." << endl;
-	clFinish(Command_Queue);
-
 
 
 

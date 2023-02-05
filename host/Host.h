@@ -1,6 +1,25 @@
-
+#include "hls_stream.h"
+#include "ap_int.h"
+#include "common/xf_common.hpp"
+#include "common/xf_utility.hpp"
+#include "imgproc/xf_sgbm.hpp"
+#include "xf_config_params.h"
 
 #define BASE			1024
+
+
+// Set the input and output pixel depth:
+#define IN_TYPE XF_8UC1
+#define PTR_IN_WIDTH 8
+#define OUT_TYPE XF_8UC1
+#define PTR_OUT_WIDTH 8
+
+// Set the optimization type:
+#define NPC1 XF_NPPC1
+
+
+
+
 
 // Size of these buffers are in byte
 #define SIZE_ImgLeft_0              BASE * /*datadepth*/
