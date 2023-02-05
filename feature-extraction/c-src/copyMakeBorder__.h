@@ -4,18 +4,37 @@
 #include "Point__.h"
 using namespace std;
 
-/*enum BorderTypes {
-    BORDER_CONSTANT = 0, //!< `iiiiii|abcdefgh|iiiiiii`  with some specified `i`
-    BORDER_REPLICATE = 1, //!< `aaaaaa|abcdefgh|hhhhhhh`
-    BORDER_REFLECT = 2, //!< `fedcba|abcdefgh|hgfedcb`
-    BORDER_WRAP = 3, //!< `cdefgh|abcdefgh|abcdefg`
-    BORDER_REFLECT_101 = 4, //!< `gfedcb|abcdefgh|gfedcba`
-    BORDER_TRANSPARENT = 5, //!< `uvwxyz|abcdefgh|ijklmno`
+#define CV_CN_MAX     512
+#define CV_CN_SHIFT   3
+#define CV_DEPTH_MAX  (1 << CV_CN_SHIFT)
 
-    BORDER_REFLECT101 = BORDER_REFLECT_101, //!< same as BORDER_REFLECT_101
-    BORDER_DEFAULT = BORDER_REFLECT_101, //!< same as BORDER_REFLECT_101
-    BORDER_ISOLATED = 16 //!< do not look outside of ROI
-};*/
+
+#define CV_MAT_DEPTH_MASK       (CV_DEPTH_MAX - 1)
+#define CV_MAT_DEPTH(flags)     ((flags) & CV_MAT_DEPTH_MASK)
+
+#define CV_MAKETYPE(depth,cn) (CV_MAT_DEPTH(depth) + (((cn)-1) << CV_CN_SHIFT))
+
+#define CV_MAT_CN_MASK          ((CV_CN_MAX - 1) << CV_CN_SHIFT)
+#define CV_MAT_CN(flags)        ((((flags) & CV_MAT_CN_MASK) >> CV_CN_SHIFT) + 1)
+
+#  define CV_OVERRIDE override
+#    define CV_INLINE static inline
+#  define CV_ENABLE_UNROLLED 1
+
+//typedef unsigned char uchar;
+
+enum BorderTypes {
+    BORDER_CONSTANT_ = 0, //!< `iiiiii|abcdefgh|iiiiiii`  with some specified `i`
+    BORDER_REPLICATE_ = 1, //!< `aaaaaa|abcdefgh|hhhhhhh`
+    BORDER_REFLECT_ = 2, //!< `fedcba|abcdefgh|hgfedcb`
+    BORDER_WRAP_ = 3, //!< `cdefgh|abcdefgh|abcdefg`
+    BORDER_REFLECT_101_ = 4, //!< `gfedcb|abcdefgh|gfedcba`
+    BORDER_TRANSPARENT_ = 5, //!< `uvwxyz|abcdefgh|ijklmno`
+
+    BORDER_REFLECT101_ = BORDER_REFLECT_101_, //!< same as BORDER_REFLECT_101
+    BORDER_DEFAULT_ = BORDER_REFLECT_101_, //!< same as BORDER_REFLECT_101
+    BORDER_ISOLATED_ = 16 //!< do not look outside of ROI
+};
 
 CV_EXPORTS_W void copyMakeBorder__(InputArray src, OutputArray dst,
     int top, int bottom, int left, int right,
@@ -26,7 +45,7 @@ int borderInterpolate_(int p, int len, int borderType)
 {
     //CV_TRACE_FUNCTION_VERBOSE();
 
-    CV_DbgAssert(len > 0);
+   // CV_DbgAssert(len > 0);
 
 #ifdef CV_STATIC_ANALYSIS
     if (p >= 0 && p < len)
@@ -34,11 +53,11 @@ int borderInterpolate_(int p, int len, int borderType)
     if ((unsigned)p < (unsigned)len)
 #endif
         ;
-    else if (borderType == BORDER_REPLICATE)
+    else if (borderType == 1)   //  else if (borderType == BORDER_REPLICATE)
         p = p < 0 ? 0 : len - 1;
-    else if (borderType == BORDER_REFLECT || borderType == BORDER_REFLECT_101)
+    else if (borderType == 2 || borderType == 4)    //else if (borderType == BORDER_REFLECT || borderType == BORDER_REFLECT_101)
     {
-        int delta = borderType == BORDER_REFLECT_101;
+        int delta = borderType == 4;    // int delta = borderType == BORDER_REFLECT_101;
         if (len == 1)
             return 0;
         do
@@ -54,18 +73,18 @@ int borderInterpolate_(int p, int len, int borderType)
         while ((unsigned)p >= (unsigned)len);
 #endif
     }
-    else if (borderType == BORDER_WRAP)
+    else if (borderType == 3)  //else if (borderType == BORDER_WRAP)
     {
-        CV_Assert(len > 0);
+        //CV_Assert(len > 0);
         if (p < 0)
             p -= ((p - len + 1) / len) * len;
         if (p >= len)
             p %= len;
     }
-    else if (borderType == BORDER_CONSTANT)
+    else if (borderType == 0)  // else if (borderType == BORDER_CONSTANT)
         p = -1;
     else
-        CV_Error(CV_StsBadArg, "Unknown/unsupported border type");
+        /*CV_Error(CV_StsBadArg, "Unknown/unsupported border type")*/;
     return p;
 }
 
@@ -165,13 +184,14 @@ void scalarToRawData(const Scalar& s, void* _buf, int type, int unroll_to)
     //CV_INSTRUMENT_REGION();
 
     const int depth = CV_MAT_DEPTH(type), cn = CV_MAT_CN(type);
-    CV_Assert(cn <= 4);
+    //CV_Assert(cn <= 4);
+    //cout << "depth " << depth << endl; 0
     switch (depth)
     {
     case CV_8U:
         scalarToRawData_<uchar>(s, (uchar*)_buf, cn, unroll_to);
         break;
-    case CV_8S:
+    /*case CV_8S:
         scalarToRawData_<schar>(s, (schar*)_buf, cn, unroll_to);
         break;
     case CV_16U:
@@ -191,7 +211,7 @@ void scalarToRawData(const Scalar& s, void* _buf, int type, int unroll_to)
         break;
     case CV_16F:
         scalarToRawData_<float16_t>(s, (float16_t*)_buf, cn, unroll_to);
-        break;
+        break;*/
     default:
         ;//CV_Error(CV_StsUnsupportedFormat, "");
     }
@@ -243,7 +263,7 @@ void copyMakeBorder__(InputArray _src, OutputArray _dst, int top, int bottom,
 {
    // CV_INSTRUMENT_REGION();
 
-    CV_Assert(top >= 0 && bottom >= 0 && left >= 0 && right >= 0 && _src.dims() <= 2);
+    //CV_Assert(top >= 0 && bottom >= 0 && left >= 0 && right >= 0 && _src.dims() <= 2);
 
     //CV_OCL_RUN(_dst.isUMat(),
     //    ocl_copyMakeBorder(_src, _dst, top, bottom, left, right, borderType, value))
@@ -251,7 +271,7 @@ void copyMakeBorder__(InputArray _src, OutputArray _dst, int top, int bottom,
         Mat src = _src.getMat();
     int type = src.type();
 
-    if (src.isSubmatrix() && (borderType & BORDER_ISOLATED) == 0)
+    if (src.isSubmatrix() && (borderType & BORDER_ISOLATED_) == 0)
     {
         Size wholeSize;
         Point ofs;
@@ -277,11 +297,12 @@ void copyMakeBorder__(InputArray _src, OutputArray _dst, int top, int bottom,
         return;
     }
 
-    borderType &= ~BORDER_ISOLATED;
+    borderType &= ~BORDER_ISOLATED_;
+   // cout << "borderType: " << borderType << endl;  4, 0
 
     //CV_IPP_RUN_FAST(ipp_copyMakeBorder(src, dst, top, bottom, left, right, borderType, value))
 
-        if (borderType != BORDER_CONSTANT){
+        if (borderType != 0){     // if (borderType != BORDER_CONSTANT){
             copyMakeBorder_8u(src.ptr(), src.step, src.size(),
                 dst.ptr(), dst.step, dst.size(),
                 top, left, (int)src.elemSize(), borderType);
@@ -294,7 +315,7 @@ void copyMakeBorder__(InputArray _src, OutputArray _dst, int top, int bottom,
             AutoBuffer<double> buf(cn);
             if (cn > 4)
             {
-                CV_Assert(value[0] == value[1] && value[0] == value[2] && value[0] == value[3]);
+                //CV_Assert(value[0] == value[1] && value[0] == value[2] && value[0] == value[3]);
                 cn1 = 1;
             }
             scalarToRawData(value, buf.data(), CV_MAKETYPE(src.depth(), cn1), cn);

@@ -32,13 +32,45 @@ using namespace cv;
 using namespace utils;
 //#pragma warning( disable : 4996 )
 
+#define CV_CN_MAX     512
+#define CV_CN_SHIFT   3
+#define CV_DEPTH_MAX  (1 << CV_CN_SHIFT)
+
+#define CV_8U   0
+#define CV_8S   1
+#define CV_16U  2
+#define CV_16S  3
+#define CV_32S  4
+#define CV_32F  5
+#define CV_64F  6
+#define CV_16F  7
+
+#define CV_MAT_DEPTH_MASK       (CV_DEPTH_MAX - 1)
+#define CV_MAT_DEPTH(flags)     ((flags) & CV_MAT_DEPTH_MASK)
+
+#define CV_MAKETYPE_(depth,cn) (CV_MAT_DEPTH(depth) + (((cn)-1) << CV_CN_SHIFT))
+
+#define CV_MAT_CN_MASK          ((CV_CN_MAX - 1) << CV_CN_SHIFT)
+#define CV_MAT_CN(flags)        ((((flags) & CV_MAT_CN_MASK) >> CV_CN_SHIFT) + 1)
+
+#  define CV_OVERRIDE override
+#    define CV_INLINE static inline
+#  define CV_ENABLE_UNROLLED 1
+
+typedef unsigned char uchar;
+typedef unsigned __int64 size_t;
+
+#define CV_PI   3.1415926535897932384626433832795
 
 
 
-class CV_EXPORTS Algorithm__;
+
+
+
+class Algorithm__;
 //template<typename _Tp, typename _EnumTp = void> struct ParamType {};
 
-class CV_EXPORTS_W Algorithm__
+class Algorithm__
 {
 public:
     Algorithm__();
@@ -55,11 +87,11 @@ public:
     /** @brief simplified API for language bindings
     * @overload
     */
-    CV_WRAP void write(const Ptr<FileStorage>& fs, const String& name = String()) const;
+     void write(const Ptr<FileStorage>& fs, const String& name = String()) const;
 
     /** @brief Reads algorithm parameters from a file storage
     */
-    CV_WRAP virtual void read(const FileNode& fn) { CV_UNUSED(fn); }
+     virtual void read(const FileNode& fn) { CV_UNUSED(fn); }
 
     /** @brief Returns true if the Algorithm is empty (e.g. in the very beginning or after unsuccessful read
     */
@@ -77,7 +109,7 @@ public:
     template<typename _Tp> static Ptr<_Tp> load(const String& filename, const String& objname = String())
     {
         FileStorage fs(filename, FileStorage::READ);
-        CV_Assert(fs.isOpened());
+        //CV_Assert(fs.isOpened());
         FileNode fn = objname.empty() ? fs.getFirstTopLevelNode() : fs[objname];
         if (fn.empty()) return Ptr<_Tp>();
         Ptr<_Tp> obj = _Tp::create();
@@ -97,11 +129,11 @@ public:
 
     /** Saves the algorithm to a file.
     In order to make this method work, the derived class must implement Algorithm::write(FileStorage& fs). */
-    CV_WRAP virtual void save(const String& filename) const;
+     virtual void save(const String& filename) const;
 
     /** Returns the algorithm string identifier.
     This string is used as top level xml/yml node tag when the object is saved to a file or string. */
-    CV_WRAP virtual String getDefaultName() const;
+     virtual String getDefaultName() const;
 
 protected:
     void writeFormat(FileStorage& fs) const;
@@ -176,17 +208,14 @@ public:
         bool useProvidedKeypoints = false);
 };*/
 
-#ifdef __EMSCRIPTEN__
-class CV_EXPORTS_W Feature2D__ : public Algorithm__
-#else
-class CV_EXPORTS_W Feature2D__ : public virtual Algorithm__
-#endif
+
+class Feature2D__ : public virtual Algorithm__
 {
 public:
     virtual ~Feature2D__();
 
     
-    CV_WRAP virtual void detect(InputArray image,
+     virtual void detect(InputArray image,
          std::vector<KeyPoint>& keypoints,
         InputArray mask = noArray());
 
@@ -196,7 +225,7 @@ public:
         InputArrayOfArrays masks = noArray());*/
 
    
-    CV_WRAP virtual void compute(InputArray image,
+     virtual void compute(InputArray image,
           std::vector<KeyPoint>& keypoints,
         OutputArray descriptors);
 
@@ -206,7 +235,7 @@ public:
         OutputArrayOfArrays descriptors);*/
 
     /** Detects keypoints and computes the descriptors */
-    CV_WRAP virtual void detectAndCompute(InputArray image, InputArray mask,
+     virtual void detectAndCompute(InputArray image, InputArray mask,
          std::vector<KeyPoint>& keypoints,
         OutputArray descriptors,
         bool useProvidedKeypoints = false);
@@ -229,7 +258,7 @@ public:
     //CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
 
     // see corresponding cv::Algorithm method
-    CV_WRAP inline void write(const Ptr<FileStorage>& fs, const String& name = String()) const { Algorithm__::write(fs, name); }
+     inline void write(const Ptr<FileStorage>& fs, const String& name = String()) const { Algorithm__::write(fs, name); }
 };
 
 Feature2D__::~Feature2D__() {}
@@ -268,7 +297,7 @@ void Feature2D__::detectAndCompute(InputArray, InputArray,
 {
     //CV_INSTRUMENT_REGION();
 
-    CV_Error(Error::StsNotImplemented, "");
+    //CV_Error(Error::StsNotImplemented, "");
 }
 
 
@@ -408,7 +437,7 @@ float fastAtan2__(float y, float x)
 
 
 
-class CV_EXPORTS_W FastFeatureDetector__ : public Feature2D__
+class  FastFeatureDetector__ : public Feature2D__
 {
 public:
     enum DetectorType
@@ -421,21 +450,21 @@ public:
     };
 
 
-    CV_WRAP static Ptr<FastFeatureDetector__> create(int threshold = 10,
+     static Ptr<FastFeatureDetector__> create(int threshold = 10,
         bool nonmaxSuppression = true,
         FastFeatureDetector__::DetectorType type = FastFeatureDetector__::TYPE_9_16);
 
-    CV_WRAP virtual void setThreshold(int threshold) = 0;
+   /* CV_WRAP virtual void setThreshold(int threshold) = 0;
     CV_WRAP virtual int getThreshold() const = 0;
 
     CV_WRAP virtual void setNonmaxSuppression(bool f) = 0;
     CV_WRAP virtual bool getNonmaxSuppression() const = 0;
 
     CV_WRAP virtual void setType(FastFeatureDetector__::DetectorType type) = 0;
-    CV_WRAP virtual FastFeatureDetector__::DetectorType getType() const = 0;
+    CV_WRAP virtual FastFeatureDetector__::DetectorType getType() const = 0;*/
     //CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
 };
-
+/*
 static inline int hal_FAST(cv::Mat& src, std::vector<KeyPoint>& keypoints, int threshold, bool nonmax_suppression, FastFeatureDetector__::DetectorType type)
 {
     if (threshold > 20)
@@ -503,11 +532,11 @@ static inline int hal_FAST(cv::Mat& src, std::vector<KeyPoint>& keypoints, int t
         CV_Error_(cv::Error::StsInternal, \
             ("HAL implementation " CVAUX_STR(name) " ==> " CVAUX_STR(fun) " returned %d (0x%08x)", res, res)); \
 }
-inline int hal_ni_FAST(const uchar* src_data, size_t src_step, int width, int height, uchar* keypoints_data, size_t* keypoints_count, int threshold, bool nonmax_suppression, int /*cv::FastFeatureDetector::DetectorType*/ type) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
+inline int hal_ni_FAST(const uchar* src_data, size_t src_step, int width, int height, uchar* keypoints_data, size_t* keypoints_count, int threshold, bool nonmax_suppression, int /*cv::FastFeatureDetector::DetectorType type) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
 
 //! @cond IGNORED
 #define cv_hal_FAST hal_ni_FAST
-
+*/
 
 /// ////////////////////
 
@@ -549,7 +578,7 @@ public:
         KeyPointsFilter__::runByPixelsMask(keypoints, mask);
     }
 
-    void set(int prop, double value)
+    /*void set(int prop, double value)
     {
         if (prop == THRESHOLD)
             threshold = cvRound(value);
@@ -571,16 +600,16 @@ public:
             return static_cast<int>(type);
         CV_Error(Error::StsBadArg, "");
         return 0;
-    }
+    }*/
 
-    void setThreshold(int threshold_) CV_OVERRIDE { threshold = threshold_; }
+    /*void setThreshold(int threshold_) CV_OVERRIDE { threshold = threshold_; }
     int getThreshold() const CV_OVERRIDE { return threshold; }
 
     void setNonmaxSuppression(bool f) CV_OVERRIDE { nonmaxSuppression = f; }
     bool getNonmaxSuppression() const CV_OVERRIDE { return nonmaxSuppression; }
 
     void setType(FastFeatureDetector__::DetectorType type_) { type = type_; }
-    FastFeatureDetector__::DetectorType getType() const { return type; }
+    FastFeatureDetector__::DetectorType getType() const { return type; }*/
 
     int threshold;
     bool nonmaxSuppression;
@@ -630,7 +659,7 @@ public:
 
      CV_WRAP virtual void setFastThreshold(int fastThreshold) = 0;
      CV_WRAP virtual int getFastThreshold() const = 0;*/
-     //CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
+    // CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
 };
 
 
@@ -643,9 +672,11 @@ public:
         nfeatures(_nfeatures), scaleFactor(_scaleFactor), nlevels(_nlevels),
         edgeThreshold(_edgeThreshold), firstLevel(_firstLevel), wta_k(_WTA_K),
         scoreType(_scoreType), patchSize(_patchSize), fastThreshold(_fastThreshold)
-    {}
+    {
+        cout << "ORB_Impl__" << endl;
+    }
 
-    /*void setMaxFeatures(int maxFeatures) CV_OVERRIDE { nfeatures = maxFeatures; }
+   /* void setMaxFeatures(int maxFeatures) CV_OVERRIDE { nfeatures = maxFeatures; }
     int getMaxFeatures() const CV_OVERRIDE { return nfeatures; }
 
     void setScaleFactor(double scaleFactor_) CV_OVERRIDE { scaleFactor = scaleFactor_; }
@@ -729,15 +760,15 @@ static void
 HarrisResponses(const Mat& img, const std::vector<Rect>& layerinfo,
     std::vector<KeyPoint>& pts, int blockSize, float harris_k)
 {
-    CV_CheckTypeEQ(img.type(), CV_8UC1, "");
-    CV_CheckGT(blockSize, 0, "");
-    CV_CheckLE(blockSize * blockSize, 2048, "");
+    //CV_CheckTypeEQ(img.type(), CV_8UC1, "");
+    //CV_CheckGT(blockSize, 0, "");
+    //CV_CheckLE(blockSize * blockSize, 2048, "");
 
     size_t ptidx, ptsize = pts.size();
 
     const uchar* ptr00 = img.ptr<uchar>();
     size_t size_t_step = img.step;
-    CV_CheckLE(size_t_step * blockSize + blockSize + 1, (size_t)INT_MAX, "");  // ofs computation, step+1
+    //CV_CheckLE(size_t_step * blockSize + blockSize + 1, (size_t)INT_MAX, "");  // ofs computation, step+1
     int step = static_cast<int>(size_t_step);
 
     int r = blockSize / 2;
@@ -882,7 +913,7 @@ computeOrbDescriptors(const Mat& imagePyramid, const std::vector<Rect>& layerInf
                 desc[i] = (uchar)val;
             }
         }
-        else if (wta_k == 3)
+        /*else if (wta_k == 3)
         {
             for (i = 0; i < dsize; ++i, pattern += 12)
             {
@@ -941,15 +972,15 @@ computeOrbDescriptors(const Mat& imagePyramid, const std::vector<Rect>& layerInf
 
                 desc[i] = (uchar)val;
             }
-        }
+        }*/
         else
-            CV_Error(Error::StsBadSize, "Wrong wta_k. It can be only 2, 3 or 4.");
+            ;// CV_Error(Error::StsBadSize, "Wrong wta_k. It can be only 2, 3 or 4.");
 #undef GET_VALUE
     }
 }
 
 
-
+/*
 static void initializeOrbPattern(const Point__* pattern0, std::vector<Point__>& pattern, int ntuples, int tupleSize, int poolSize)
 {
     RNG rng(0x12345678);
@@ -975,7 +1006,7 @@ static void initializeOrbPattern(const Point__* pattern0, std::vector<Point__>& 
             }
         }
     }
-}
+}*/
 
 static int bit_pattern_31_[256 * 4] =
 {
@@ -1290,7 +1321,7 @@ static void computeKeyPoints(const Mat& imagePyramid,
     int sumFeatures = 0;
     for (level = 0; level < nlevels - 1; level++) //對每層圖像上分配相應角點數
     {
-        nfeaturesPerLevel[level] = cvRound__(ndesiredFeaturesPerScale);
+        nfeaturesPerLevel[level] = cvRound(ndesiredFeaturesPerScale);
         sumFeatures += nfeaturesPerLevel[level];
         ndesiredFeaturesPerScale *= factor;
     }
@@ -1466,7 +1497,7 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
 {
     //CV_INSTRUMENT_REGION();
 
-    CV_Assert(patchSize >= 2);
+   // CV_Assert(patchSize >= 2);
 
     bool do_keypoints = !useProvidedKeypoints;
     bool do_descriptors = _descriptors.needed();
@@ -1509,7 +1540,7 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
         for (i = 0; i < nkeypoints; i++)
         {
             level = keypoints[i].octave;
-            CV_Assert(level >= 0);
+           // CV_Assert(level >= 0);
             if (i > 0 && level < keypoints[i - 1].octave)
                 sortedByLevel = false;
             nLevels = max(nLevels, level);
@@ -1577,8 +1608,14 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
         if (level != firstLevel)  //得到金字塔每層的圖像  
         {
             resize__(prevImg, currImg, sz, 0, 0, INTER_LINEAR_EXACT);
+            //cout << "currImgR : " << currImg.rows << " currImgC : " << currImg.cols << "currImgD : " << currImg.dims << endl;
+            //cout << "size : " << *prevImg.size.p << endl;
+            //cout << "data : " << *prevImg.data << endl;
+
+
             if (!mask.empty())
             {
+                //cout << "!mask.empty()" << endl;
                 resize__(prevMask, currMask, sz, 0, 0, INTER_LINEAR_EXACT);
                 if (level > firstLevel)
                     threshold__(currMask, currMask, 254, 0, THRESH_TOZERO);
@@ -1589,6 +1626,7 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
             if (!mask.empty())
                 copyMakeBorder__(currMask, extMask, border, border, border, border,
                     BORDER_CONSTANT + BORDER_ISOLATED);
+            
         }
         else
         {
@@ -1617,6 +1655,8 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
         computeKeyPoints(imagePyramid, uimagePyramid, maskPyramid,
             layerInfo, ulayerInfo, layerScale, keypoints,
             nfeatures, scaleFactor, edgeThreshold, patchSize, scoreType, useOCL, fastThreshold);
+        //cout << "imagePyramid : " << imagePyramid.rows << " imagePyramidC : " << imagePyramid.cols << "imagePyramidD : " << imagePyramid.dims << endl;
+        //cout << "_descriptors : " << *_descriptors.data << endl;
     }
     else
     {
@@ -1629,7 +1669,7 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
             for (i = 0; i < nkeypoints; i++)
             {
                 level = keypoints[i].octave;
-                CV_Assert(0 <= level);
+                //CV_Assert(0 <= level);
                 allKeypoints[level].push_back(keypoints[i]);
             }
             keypoints.clear();
@@ -1662,15 +1702,15 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
             makeRandomPattern(patchSize, patternbuf, npoints);
         }
 
-        CV_Assert(wta_k == 2 || wta_k == 3 || wta_k == 4);
-
+       // CV_Assert(wta_k == 2 || wta_k == 3 || wta_k == 4);
+        //cout << "wta_k: " << wta_k << endl; 2
         if (wta_k == 2)
             std::copy(pattern0, pattern0 + npoints, std::back_inserter(pattern));
-        else
+        /*else
         {
             int ntuples = descriptorSize() * 4;
             initializeOrbPattern(pattern0, pattern, ntuples, wta_k, npoints);
-        }
+        }*/
 
         for (level = 0; level < nLevels; level++)
         {
@@ -1709,8 +1749,15 @@ void ORB_Impl__::detectAndCompute(InputArray _image, InputArray _mask,
             Mat descriptors = _descriptors.getMat();
             computeOrbDescriptors(imagePyramid, layerInfo, layerScale,
                 keypoints, descriptors, pattern, dsize, wta_k);
+            
         }
     }
+   /* for (int i = 0; i < keypoints.size(); i++)
+    {
+        cout << "x : " << keypoints[i].pt.x << " " << " y : " << keypoints[i].pt.y << endl;
+    }*/
+    cout << "s : " << keypoints.size() << endl;
+   
 }
 
 

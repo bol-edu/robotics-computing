@@ -1,14 +1,16 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include "sepFilter2D__.h"
+#include "AutoBuffer__.h"
 
 using namespace std;
 
+#define DBL_EPSILON      2.2204460492503131e-016 // smallest such that 1.0+DBL_EPSILON != 1.0
 
-enum {
+/*enum {
     softfloat_mulAdd_subC = 1,
     softfloat_mulAdd_subProd = 2
-};
+};*/
 
 
 #define EXPTAB_SCALE 6
@@ -16,7 +18,7 @@ enum {
 
 CV_EXPORTS_W void GaussianBlur__(InputArray src, OutputArray dst, Size ksize,
     double sigmaX, double sigmaY = 0,
-    int borderType = BORDER_DEFAULT);
+    int borderType = BORDER_DEFAULT_);
 
 static const softdouble EXPPOLY_32F_A0 = float64_t::fromRaw(0x3f83ce0f3e46f431);
 static const float64_t exp_max_val(3000 * (1 << EXPTAB_SCALE)); // log10(DBL_MAX) < 3000
@@ -190,7 +192,7 @@ static float64_t f64_exp(float64_t x)
 }
 
 softdouble exp(const softdouble& a) { return f64_exp(a); }
-
+/*
 static inline struct uint128 softfloat_add128(uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0)
 {
     struct uint128 z;
@@ -199,7 +201,7 @@ static inline struct uint128 softfloat_add128(uint64_t a64, uint64_t a0, uint64_
     return z;
 }
 
-/*static struct exp16_sig64 softfloat_normSubnormalF64Sig(uint_fast64_t sig)
+static struct exp16_sig64 softfloat_normSubnormalF64Sig(uint_fast64_t sig)
 {
     int_fast8_t shiftDist;
     struct exp16_sig64 z;
@@ -209,7 +211,7 @@ static inline struct uint128 softfloat_add128(uint64_t a64, uint64_t a0, uint64_
     z.sig = sig << shiftDist;
     return z;
 }*/
-
+/*
 static inline struct uint128 softfloat_shortShiftRightJam128(uint64_t a64, uint64_t a0, uint_fast8_t dist)
 {
     uint_fast8_t negDist = -dist;
@@ -246,7 +248,7 @@ softfloat_shiftRightJam128(uint64_t a64, uint64_t a0, uint_fast32_t dist)
     }
     return z;
 }
-
+/*
 static inline struct uint128 softfloat_sub128(uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0)
 {
     struct uint128 z;
@@ -267,7 +269,7 @@ static inline struct uint128 softfloat_shortShiftLeft128(uint64_t a64, uint64_t 
     z.v64 = a64 << dist | a0 >> (-dist & 63);
     z.v0 = a0 << dist;
     return z;
-}
+}*/
 
 /*static inline void raiseFlags(uint_fast8_t /* flags )
 {
@@ -281,7 +283,7 @@ enum {
     flag_infinite = 8,
     flag_invalid = 16
 };*/
-
+/*
 static float64_t
 softfloat_mulAddF64(
     uint_fast64_t uiA, uint_fast64_t uiB, uint_fast64_t uiC, uint_fast8_t op)
@@ -306,7 +308,7 @@ softfloat_mulAddF64(
     int_fast8_t shiftDist;
 
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    /*------------------------------------------------------------------------
     signA = signF64UI(uiA);
     expA = expF64UI(uiA);
     sigA = fracF64UI(uiA);
@@ -318,7 +320,7 @@ softfloat_mulAddF64(
     sigC = fracF64UI(uiC);
     signZ = signA ^ signB ^ (op == softfloat_mulAdd_subProd);
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
     if (expA == 0x7FF) {
         if (sigA || ((expB == 0x7FF) && sigB)) goto propagateNaN_ABC;
         magBits = expB | sigB;
@@ -338,7 +340,7 @@ softfloat_mulAddF64(
         goto uiZ;
     }
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
     if (!expA) {
         if (!sigA) goto zeroProd;
         normExpSig = softfloat_normSubnormalF64Sig(sigA);
@@ -352,7 +354,7 @@ softfloat_mulAddF64(
         sigB = normExpSig.sig;
     }
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
     expZ = expA + expB - 0x3FE;
     sigA = (sigA | UINT64_C(0x0010000000000000)) << 10;
     sigB = (sigB | UINT64_C(0x0010000000000000)) << 10;
@@ -375,7 +377,7 @@ softfloat_mulAddF64(
     }
     sigC = (sigC | UINT64_C(0x0010000000000000)) << 9;
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
     //fixed initialization
     sig128C.v0 = sig128C.v64 = 0;
     expDiff = expZ - expC;
@@ -393,10 +395,10 @@ softfloat_mulAddF64(
         sig128C = softfloat_shiftRightJam128(sigC, 0, expDiff);
     }
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
     if (signZ == signC) {
         /*--------------------------------------------------------------------
-        *--------------------------------------------------------------------*/
+        *--------------------------------------------------------------------*
         if (expDiff <= 0) {
             sigZ = (sigC + sig128Z.v64) | (sig128Z.v0 != 0);
         }
@@ -413,7 +415,7 @@ softfloat_mulAddF64(
     }
     else {
         /*--------------------------------------------------------------------
-        *--------------------------------------------------------------------*/
+        *--------------------------------------------------------------------*
         if (expDiff < 0) {
             signZ = signC;
             sig128Z = softfloat_sub128(sigC, 0, sig128Z.v64, sig128Z.v0);
@@ -432,7 +434,7 @@ softfloat_mulAddF64(
                     sig128Z.v64, sig128Z.v0, sig128C.v64, sig128C.v0);
         }
         /*--------------------------------------------------------------------
-        *--------------------------------------------------------------------*/
+        *--------------------------------------------------------------------*
         if (!sig128Z.v64) {
             expZ -= 64;
             sig128Z.v64 = sig128Z.v0;
@@ -454,12 +456,12 @@ softfloat_mulAddF64(
 roundPack:
     return softfloat_roundPackToF64(signZ, expZ, sigZ);
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
 propagateNaN_ABC:
     uiZ = softfloat_propagateNaNF64UI(uiA, uiB);
     goto propagateNaN_ZC;
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
 infProdArg:
     if (magBits) {
         uiZ = packToF64UI(signZ, 0x7FF, 0);
@@ -473,7 +475,7 @@ propagateNaN_ZC:
     uiZ = softfloat_propagateNaNF64UI(uiZ, uiC);
     goto uiZ;
     /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
+    *------------------------------------------------------------------------*
 zeroProd:
     uiZ = uiC;
     if (!(expC | sigC) && (signZ != signC)) {
@@ -483,9 +485,9 @@ zeroProd:
     }
 uiZ:
     return float64_t::fromRaw(uiZ);
-}
+}*/
 
-
+/*
 static float64_t f64_mulAdd(float64_t a, float64_t b, float64_t c)
 {
     uint_fast64_t uiA;
@@ -496,19 +498,20 @@ static float64_t f64_mulAdd(float64_t a, float64_t b, float64_t c)
     uiB = b.v;
     uiC = c.v;
     return softfloat_mulAddF64(uiA, uiB, uiC, 0);
-}
+}*/
 
-softdouble mulAdd(const softdouble& a, const softdouble& b, const softdouble& c) { return f64_mulAdd(a, b, c); }
+//softdouble mulAdd(const softdouble& a, const softdouble& b, const softdouble& c) { return f64_mulAdd(a, b, c); }
 
 
 static
 softdouble getGaussianKernelBitExact(std::vector<softdouble>& result, int n, double sigma)
 {
-    CV_Assert(n > 0);
+    //CV_Assert(n > 0);
     //TODO: incorrect SURF implementation requests kernel with n = 20 (PATCH_SZ): https://github.com/opencv/opencv/issues/15856
     //CV_Assert((n & 1) == 1);  // odd
 
-    if (sigma <= 0)
+    cout << "sigma: " << sigma << endl;
+    /*if (sigma <= 0)
     {
         if (n == 1)
         {
@@ -567,17 +570,18 @@ softdouble getGaussianKernelBitExact(std::vector<softdouble>& result, int n, dou
             result.assign(v9, v9 + 9);
             return softdouble::one();
         }
-    }
+    }*/
 
     softdouble sd_0_15 = softdouble::fromRaw(0x3fc3333333333333);  // 0.15
     softdouble sd_0_35 = softdouble::fromRaw(0x3fd6666666666666);  // 0.35
     softdouble sd_minus_0_125 = softdouble::fromRaw(0xbfc0000000000000);  // -0.5*0.25
 
-    softdouble sigmaX = sigma > 0 ? softdouble(sigma) : mulAdd(softdouble(n), sd_0_15, sd_0_35);// softdouble(((n-1)*0.5 - 1)*0.3 + 0.8)
+    //softdouble sigmaX = sigma > 0 ? softdouble(sigma) : mulAdd(softdouble(n), sd_0_15, sd_0_35);// softdouble(((n-1)*0.5 - 1)*0.3 + 0.8)
+    softdouble sigmaX = softdouble(sigma);
     softdouble scale2X = sd_minus_0_125 / (sigmaX * sigmaX);
 
     int n2_ = (n - 1) / 2;
-    cv::AutoBuffer<softdouble> values(n2_ + 1);
+    AutoBuffer__<softdouble> values(n2_ + 1);
     softdouble sum = softdouble::zero();
     for (int i = 0, x = 1 - n; i < n2_; i++, x += 2)
     {
@@ -623,7 +627,7 @@ softdouble getGaussianKernelBitExact(std::vector<softdouble>& result, int n, dou
 
 Mat getGaussianKernel_(int n, double sigma, int ktype)
 {
-    CV_CheckDepth(ktype, ktype == CV_32F || ktype == CV_64F, "");
+   // CV_CheckDepth(ktype, ktype == CV_32F || ktype == CV_64F, "");
     Mat kernel(n, 1, ktype);
 
     std::vector<softdouble> kernel_bitexact;
@@ -636,7 +640,7 @@ Mat getGaussianKernel_(int n, double sigma, int ktype)
     }
     else
     {
-        CV_DbgAssert(ktype == CV_64F);
+        //CV_DbgAssert(ktype == CV_64F);
         for (int i = 0; i < n; i++)
             kernel.at<double>(i) = kernel_bitexact[i];
     }
@@ -661,8 +665,8 @@ static void createGaussianKernels(T& kx, T& ky, int type, Size& ksize,
     if (ksize.height <= 0 && sigma2 > 0)
         ksize.height = cvRound(sigma2 * (depth == CV_8U ? 3 : 4) * 2 + 1) | 1;
 
-    CV_Assert(ksize.width > 0 && ksize.width % 2 == 1 &&
-        ksize.height > 0 && ksize.height % 2 == 1);
+    //CV_Assert(ksize.width > 0 && ksize.width % 2 == 1 &&
+    //    ksize.height > 0 && ksize.height % 2 == 1);
 
     sigma1 = max(sigma1, 0.);
     sigma2 = max(sigma2, 0.);
@@ -674,8 +678,19 @@ static void createGaussianKernels(T& kx, T& ky, int type, Size& ksize,
         getGaussianKernel_(ksize.height, sigma2, max(depth, CV_32F), ky);
 }
 
+// in copyMakeBorder__.h
+ /*enum BorderTypes_ {
+    BORDER_CONSTANT_ = 0, //!< `iiiiii|abcdefgh|iiiiiii`  with some specified `i`
+   BORDER_REPLICATE = 1, //!< `aaaaaa|abcdefgh|hhhhhhh`
+    BORDER_REFLECT = 2, //!< `fedcba|abcdefgh|hgfedcb`
+    BORDER_WRAP = 3, //!< `cdefgh|abcdefgh|abcdefg`
+    BORDER_REFLECT_101 = 4, //!< `gfedcb|abcdefgh|gfedcba`
+    BORDER_TRANSPARENT = 5, //!< `uvwxyz|abcdefgh|ijklmno`
 
-
+    BORDER_REFLECT101 = BORDER_REFLECT_101, //!< same as BORDER_REFLECT_101
+    BORDER_DEFAULT = BORDER_REFLECT_101, //!< same as BORDER_REFLECT_101
+    BORDER_ISOLATED_ = 16 //!< do not look outside of ROI
+};*/
 
 
 void GaussianBlur__(InputArray _src, OutputArray _dst, Size ksize,
@@ -684,14 +699,14 @@ void GaussianBlur__(InputArray _src, OutputArray _dst, Size ksize,
 {
     //CV_INSTRUMENT_REGION();
 
-    CV_Assert(!_src.empty());
+   // CV_Assert(!_src.empty());
 
     int type = _src.type();
     Size size = _src.size();
     _dst.create(size, type);
 
-    if ((borderType & ~BORDER_ISOLATED) != BORDER_CONSTANT &&
-        ((borderType & BORDER_ISOLATED) != 0 || !_src.getMat().isSubmatrix()))
+    if ((borderType & ~BORDER_ISOLATED_) != BORDER_CONSTANT_ &&
+        ((borderType & BORDER_ISOLATED_) != 0 || !_src.getMat().isSubmatrix()))
     {
         if (size.height == 1)
             ksize.height = 1;
@@ -716,11 +731,13 @@ void GaussianBlur__(InputArray _src, OutputArray _dst, Size ksize,
     Mat kx, ky;
     createGaussianKernels(kx, ky, type, ksize, sigma1, sigma2);
 
-    CV_OCL_RUN(useOpenCL && sdepth == CV_8U &&
+    /*CV_OCL_RUN(useOpenCL && sdepth == CV_8U &&
         ((ksize.width == 3 && ksize.height == 3) ||
             (ksize.width == 5 && ksize.height == 5)),
         ocl_GaussianBlur_8UC1(_src, _dst, ksize, CV_MAT_DEPTH(type), kx, ky, borderType)
-    );
+    );*/
+
+    
 
     /*if (sdepth == CV_8U && ((borderType & BORDER_ISOLATED) || !_src.isSubmatrix()))
     {
@@ -793,21 +810,21 @@ void GaussianBlur__(InputArray _src, OutputArray _dst, Size ksize,
             return;
         }
     }*/
-
+/*
 #ifdef HAVE_OPENCL
     if (useOpenCL)
     {
         sepFilter2D(_src, _dst, sdepth, kx, ky, Point(-1, -1), 0, borderType);
         return;
     }
-#endif
+#endif*/
 
     Mat src = _src.getMat();
     Mat dst = _dst.getMat();
 
     Point ofs;
     Size wsz(src.cols, src.rows);
-    if (!(borderType & BORDER_ISOLATED))
+    if (!(borderType & BORDER_ISOLATED_))
         src.locateROI(wsz, ofs);
 
     /*CALL_HAL(gaussianBlur, cv_hal_gaussianBlur, src.ptr(), src.step, dst.ptr(), dst.step, src.cols, src.rows, sdepth, cn,
