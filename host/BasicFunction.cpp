@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <string>
+#include <dirent.h>
 #include "BasicFunction.hpp"
 namespace BasicFunction {
 std::vector<cl::Device> get_devices_of_platform(const std::string& Target_Platform_Vendor) {
@@ -246,7 +247,7 @@ cl::Program::Binaries import_binary_file(std::string xclbin_file_name) {
     return bins;
 }
 
-char* read_binary_file(const std::string& xclbin_file_name, unsigned& nb) {
+char* read_binary_file(const std::string& xclbin_file_name, unsigned& nb){
     std::cout << "INFO: Reading " << xclbin_file_name << std::endl;
 
     if (access(xclbin_file_name.c_str(), R_OK) != 0) {
@@ -263,6 +264,81 @@ char* read_binary_file(const std::string& xclbin_file_name, unsigned& nb) {
     bin_file.read(buf, nb);
     return buf;
 }
+
+
+// Need to build Linux version of read_image_folder
+std::vector<string> read_image_folder(const int FRAME_NUM, const std::string& folder_path){
+    std::vector<std::string> images;
+
+    for(int i=0; i<4541; i++){
+        std::string index = stoi(i);
+        index.insert(0, 6-index.size(), '0');
+        std::string name = folder_path + "/" + index +".png";
+        images.push_back(name);
+    }
+
+    return images;
+}
+void read_calibration(const std::string& file_path, cv::Mat* P0, cv::Mat* P1){
+    FILE* fp;
+	fopen_s(&fp, filePath, "r");
+	char* next_token1 = NULL;
+	char* next_token2 = NULL;
+
+	*P0 = cv::Mat(3, 4, CV_32F);
+	*P1 = cv::Mat(3, 4, CV_32F);
+
+	if (!fp)
+	{
+		printf("Could not open the calibration file\n");
+	}
+
+	int count = 0;
+	bool p;
+	char content[1024];
+	while (fgets(content, 1024, fp))
+	{
+		char* v = strtok_s(content, " ,", &next_token1);
+		while (v)
+		{
+			if (--count > 0) 
+			{
+				istringstream os(v);
+				float d;
+				os >> d;
+				if(p)
+					P1->at<float>((12 - count) / 4, (12 - count) % 4) = d;
+				else
+					P0->at<float>((12 - count) / 4, (12 - count) % 4) = d;
+			}
+			if (!strcmp(v, "P0:"))
+			{
+				count = 13;
+				p = 0;
+			}
+			else if (!strcmp(v, "P1:"))
+			{
+				count = 13;
+				p = 1;
+			}
+			 v = strtok_s(NULL, " ,", &next_token1);
+		}
+	}
+
+	fclose(fp);
+}
+
+
+
+void decompose_Projection_Matrix(Mat p, Mat* k, Mat* r, Mat* t){
+	Mat rotMatrixX;
+	Mat rotMatrixY;
+	Mat rotMatrixZ;
+	Mat eulerAngles;
+	
+	*t = *t / (t->at<float>(3));
+}
+
 
 bool is_emulation() {
     bool ret = false;

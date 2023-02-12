@@ -39,6 +39,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <CL/opencl.hpp> //"/opt/intel/opencl-1.2-4.4.0.117/include/CL/cl.h"
 #include <iostream>
 #include <fstream>
+#include "Host.hpp"
 
 // When creating a buffer with user pointer (CL_MEM_USE_HOST_PTR), under the hood
 // User ptr is used if and only if it is properly aligned (page aligned). When not
@@ -60,7 +61,7 @@ struct aligned_allocator {
     void deallocate(T* p, std::size_t num) { free(p); }
 };
 
-namespace xcl {
+namespace BasicFunction {
 std::vector<cl::Device> get_xil_devices();
 std::vector<cl::Device> get_devices(const std::string& vendor_name);
 /* find_xclbin_file
@@ -98,6 +99,11 @@ std::vector<cl::Device> get_devices(const std::string& vendor_name);
 std::string find_binary_file(const std::string& _device_name, const std::string& xclbin_name);
 cl::Program::Binaries import_binary_file(std::string xclbin_file_name);
 char* read_binary_file(const std::string& xclbin_file_name, unsigned& nb);
+
+std::vector<string> read_image_folder(const int FRAME_NUM, const std::string& folder_path);
+void read_calibration(const std::string& file_path, cv::Mat* P0, cv::Mat* P1);
+
+void decompose_Projection_Matrix(Mat p, Mat* k, Mat* r, Mat* t);
 bool is_emulation();
 bool is_hw_emulation();
 bool is_xpr_device(const char* device_name);
