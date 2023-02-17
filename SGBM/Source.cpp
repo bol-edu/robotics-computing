@@ -1,424 +1,275 @@
-#include<opencv2/opencv.hpp>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
+#include <vector>
 #include "Methods.h"
-#include "Dataset_Handler.h"
+#include "Mat.h"
 
-
-using namespace cv;
 using namespace std;
-
-void tutorial(Methods method);
 
 int main()
 {
+	int i = 1;
+	cout << "i:" << i << endl;
 
-	Dataset_Handler handler(0);
-	Methods method;
+	Mat image_left_test, image_right_test;
+    Mat k_left_test, t_left_test, t_right_test;
+
+#pragma warning(disable:4996)
+    FILE* fpml;
+    fpml = fopen("../input/matdata_left.txt", "r");
+    int vnum1, vnum2;
+    int data;
+    int flag, dim, row, col;
+    unsigned long long p1, p2;
+
+    fscanf(fpml, "%d %d %lld %lld %d %d", &flag, &dim, &p1, &p2, &row, &col);
+
+
+    image_left_test.flags = flag;
+    image_left_test.dims = dim;
+    image_left_test.step[0] = p1;
+    image_left_test.step[1] = p2;
+    image_left_test.rows = row;
+    image_left_test.cols = col;
+    static unsigned char ch1[1241 * 376];
+
+    image_left_test.data = ch1;
+    int imcol1 = image_left_test.cols;
+    for (int j = 0; j < image_left_test.rows; j++)
+    {
+        for (int k = 0; k < image_left_test.cols; k++)
+        {
+            fscanf(fpml, "%d %d", &vnum1, &vnum2);
+            fscanf(fpml, "%d", &data);
+
+            int num = k + (j * imcol1);
+            image_left_test.data[num] = static_cast<unsigned char>(data);
+
+
+        }
+    }
+
+    fclose(fpml);
+
+    //right------------------------------------------------------------------------------
+    FILE* fpmr;
+    fpmr = fopen("../input/matdata_right.txt", "r");
+    int vnum1r, vnum2r;
+    int datar;
+    int flagr, dimr, rowr, colr;
+    unsigned long long p1r, p2r;
+
+    fscanf(fpmr, "%d %d %lld %lld %d %d", &flagr, &dimr, &p1r, &p2r, &rowr, &colr);
+
+
+    image_right_test.flags = flagr;
+    image_right_test.dims = dimr;
+    image_right_test.step[0] = p1r;
+    image_right_test.step[1] = p2r;
+    image_right_test.rows = rowr;
+    image_right_test.cols = colr;
+    static unsigned char chr[1241 * 376];
+
+    image_right_test.data = chr;
+    int imcolr = image_right_test.cols;
+    for (int j = 0; j < image_right_test.rows; j++)
+    {
+        for (int k = 0; k < image_right_test.cols; k++)
+        {
+            fscanf(fpmr, "%d %d", &vnum1r, &vnum2r);
+            fscanf(fpmr, "%d", &datar);
+
+            int numr = k + (j * imcolr);
+            image_right_test.data[numr] = static_cast<unsigned char>(datar);
+
+
+        }
+    }
+
+    fclose(fpmr);
+
+
+    //k_left---------------------------------------------------------------------------
+
+    FILE* fpmr1k;
+    fpmr1k = fopen("../input/matdata_k_left.txt", "r");
+    int vnum11k, vnum21k;
+    float data1k;
+    int flag1k, dim1k, row1k, col1k;
+    unsigned long long p11k, p21k;
+    //unsigned char datause;
+
+    fscanf(fpmr1k, "%d %d %lld %lld %d %d", &flag1k, &dim1k, &p11k, &p21k, &row1k, &col1k);
+
+    //image_test = image_left;
+
+    k_left_test.flags = flag1k;
+    k_left_test.dims = dim1k;
+    k_left_test.step[0] = p11k;
+    k_left_test.step[1] = p21k;
+    k_left_test.rows = row1k;
+    k_left_test.cols = col1k;
+    static unsigned char ch1k[3 * 3 * 4];
+
+    k_left_test.data = ch1k;
+    //int imcol1k = k_left_test.cols;
+    for (int j = 0; j < k_left_test.rows; j++)
+    {
+        for (int k = 0; k < k_left_test.cols; k++)
+        {
+            fscanf(fpmr1k, "%d %d", &vnum11k, &vnum21k);
+            fscanf(fpmr1k, "%f", &data1k);
+
+
+            //int num1k = k + (j * imcol1k);
+            //k_left_test.data[num1k] = static_cast<unsigned char>(data1k);
+            k_left_test.at<float>(j, k) = static_cast<float>(data1k);
+
+
+        }
+    }
+
+    fclose(fpmr1k);
+
+
+    //t_right----------------------------------------------------------------------
+    FILE* fpmr1r;
+    fpmr1r = fopen("../input/matdata_t_right.txt", "r");
+    float data1r;
+    int flag1r, dim1r, row1r, col1r;
+    unsigned long long p11r, p21r;
+    //unsigned char datause;
+
+    fscanf(fpmr1r, "%d %d %lld %lld %d %d", &flag1r, &dim1r, &p11r, &p21r, &row1r, &col1r);
+
+    //image_test = image_left;
+
+    t_right_test.flags = flag1r;
+    t_right_test.dims = dim1r;
+    t_right_test.step[0] = p11r;
+    t_right_test.step[1] = p21r;
+    t_right_test.rows = row1r;
+    t_right_test.cols = col1r;
+    static unsigned char ch1r[4 * 1 * 4];
+
+    t_right_test.data = ch1r;
+    int imcol1k = t_right_test.cols;
+
+    for (int k = 0; k < 16; k++)
+    {
+        fscanf(fpmr1r, "%f", &data1r);
+
+
+        //int num1k = k + (j * imcol1k);
+        t_right_test.data[k] = static_cast<unsigned char>(data1r);
+        //t_right_test.at<float>(j, k) = static_cast<float>(data1r);
+
+    }
+
+    fclose(fpmr1r);
+
+
+
+    //t_left-----------------------------------------------------------------------------
+    FILE* fpmr1t;
+    fpmr1t = fopen("../input/matdata_t_left.txt", "r");
+    int vnum11t, vnum21t;
+    float data1t;
+    int flag1t, dim1t, row1t, col1t;
+    unsigned long long p11t, p21t;
+    //unsigned char datause;
+
+    fscanf(fpmr1t, "%d %d %lld %lld %d %d", &flag1t, &dim1t, &p11t, &p21t, &row1t, &col1t);
+
+    //image_test = image_left;
+
+    t_left_test.flags = flag1t;
+    t_left_test.dims = dim1t;
+    t_left_test.step[0] = p11t;
+    t_left_test.step[1] = p21t;
+    t_left_test.rows = row1t;
+    t_left_test.cols = col1t;
+    static unsigned char ch1t[4 * 1 * 4];
+
+    t_left_test.data = ch1t;
+    //int imcol1k = k_left_test.cols;
+    for (int j = 0; j < t_left_test.rows; j++)
+    {
+        for (int k = 0; k < t_left_test.cols; k++)
+        {
+            fscanf(fpmr1t, "%d %d", &vnum11t, &vnum21t);
+            fscanf(fpmr1t, "%f", &data1t);
+
+
+            //int num1k = k + (j * imcol1k);
+            //k_left_test.data[num1k] = static_cast<unsigned char>(data1k);
+            t_left_test.at<float>(j, k) = static_cast<float>(data1t);
+
+
+        }
+    }
+
+    fclose(fpmr1t);
+
+    //----------------------------------------------------------------------------------------
+
+    Mat depth = stereo_2_depth(image_left_test, image_right_test, k_left_test, t_left_test, t_right_test, SGBM, false, true); 
+
+    //----------------------------------------------------------------------------------------
+    /*
+    Mat disp_left = computeLeftDisparityMap(image_left_test, image_right_test, SGBM, 0);
+
+    FILE* fpd;
+    fopen_s(&fpd, "../output/test_disp.txt", "w");
+
+    fprintf_s(fpd, "%d\t%d\t%lld\t%lld\t",
+        disp_left.flags,
+        disp_left.dims,
+        disp_left.step[0],
+        disp_left.step[1]
+    );
+    fprintf_s(fpd, "%d\t%d\n", disp_left.rows, disp_left.cols);
+
+    for (int j = 0; j < disp_left.rows; j++)
+    {
+        for (int k = 0; k < disp_left.cols; k++)
+        {
+            fprintf_s(fpd, " %d ", j);
+            fprintf_s(fpd, " %d ", k);
+            fprintf_s(fpd, " %f ", disp_left.at<float>(j, k));
+            fprintf_s(fpd, "\n");
+        }
+    }
+
+    fclose(fpd);*/
+
+    FILE* fpd2;
+    fopen_s(&fpd2, "../output/test_depth.txt", "w");
+
+    fprintf_s(fpd2, "%d\t%d\t%lld\t%lld\t",
+        depth.flags,
+        depth.dims,
+        depth.step[0],
+        depth.step[1]
+    );
+    fprintf_s(fpd2, "%d\t%d\n", depth.rows, depth.cols);
+
+    for (int j = 0; j < depth.rows; j++)
+    {
+        for (int k = 0; k < depth.cols; k++)
+        {
+            fprintf_s(fpd2, " %d ", j);
+            fprintf_s(fpd2, " %d ", k);
+            fprintf_s(fpd2, " %f ", depth.at<float>(j, k));
+            //cout << "type: " << depth.type() << endl;//5
+            fprintf_s(fpd2, "\n");
+        }
+    }
+
+    fclose(fpd2);
+
+
 	
-
-	int tut = false;
-	if (tut)
-		tutorial(method);
-
-
-	/***************************************************************************************
-		Down here is a visual odometry function which combine all the other functions
-		mention in the tutorial. 
-		
-		Some parameter can be modified such as detector, matching, filter_match_distance...
-		whereas the mask is not recommended to modified.
-		
-		To be careful that it may takes pretty long time to finish processing on your PC, 
-		so please make sure everything works fine in small subset before you launch the 
-		full dataset, which contains 4000 and more images.
-		
-		The final result will be saved as 'trajectory_nolidar_bm.txt' in the result folder
-		in the arrangement of positions (x, y, z). You can use the Matlab script offered, 
-		or feel free to use your own test bench.
-	***************************************************************************************/
-	int detector = Sift;
-	bool matching = BF;
-	float filter_match_distance = 0.3;
-	bool stereo_matcher = SGBM;
-	int subset = 5;
-
-	Mat mask = Mat::zeros(handler.imheight, handler.imwidth, CV_8U);
-	mask(Rect(96, 0, handler.imwidth - 96, handler.imheight)) = 255;
-
-	vector<Mat> trajectory_nolidar_bm =  
-		method.visual_odometry(handler, Sift, BF, 0.3, SGBM, subset, mask);
-
-	FILE* fp;
-	fopen_s(&fp, "../output/trajectory_nolidar_bm.txt", "w");
-
-	for (int i = 0; i < trajectory_nolidar_bm.size(); i++)
-	{
-		fprintf_s(fp, "%lf\t%lf\t%lf\n", 
-			trajectory_nolidar_bm.at(i).at<double>(0, 3), 
-			trajectory_nolidar_bm.at(i).at<double>(1, 3), 
-			trajectory_nolidar_bm.at(i).at<double>(2, 3));
-	}
-
-	fclose(fp);
 }
 
-
-void tutorial(Methods method)
-{
-	/*
-	 *	Part I - Data Exploration
-	 */
-
-	 /***********************************************************************************
-		 We get the ground truth poses of the stereo camera from the poses data in
-		 "../dataset/poses/00.txt"
-
-		 The poses is stored in vector (array) 'poses', which each pose is represented
-		 by a 3x4 transfomration matrix.
-
-		 Using Functions:
-			 groundTruthTrajectory()
-
-	 ***********************************************************************************/
-	vector<cv::Mat> poses = method.groundTruthTrajectory("../dataset/poses/00.txt", 4541);
-
-
-	printf("/*******************************************\n");
-	printf("First 3 ground truth poses matrix:\n\n");
-	for (int i = 0; i < 3; i++)
-		cout << "pose " << i << ": " << endl << " " << poses[i] << endl << endl;
-
-	system("pause");
-	system("cls");
-
-
-
-	/***********************************************************************************
-		We can load in our sensor calibration data from the poses data in
-		"../dataset/sequences/00/calib.txt"
-
-		We can see that they have provided us 3x4 projection matrices for 4 cameras,
-		as well as the transformation matrix for the LIDAR labeled Tr.
-
-		We will need calibration data of camera0 and camera1, since we are going to
-		handle the dataset from these 2 cameras.
-
-		Using Functions:
-			read_calib()
-
-	***********************************************************************************/
-	Mat P0, P1;
-	method.read_calib("../dataset/sequences/00/calib.txt", &P0, &P1);
-
-
-	printf("/*******************************************\n");
-	printf("3x4 projection matix of camera0 and camera1:\n\n");
-	cout << "P0: " << endl << " " << P0 << endl << endl;
-	cout << "P1: " << endl << " " << P1 << endl << endl;
-
-	system("pause");
-	system("cls");
-
-
-	/***********************************************************************************
-		Now let's take a quick look at our first images from the left camera and
-		the right camera.
-	***********************************************************************************/
-	
-	Mat first_img_left = imread("../dataset/sequences/00/image_0/000000.png", IMREAD_GRAYSCALE);
-	Mat first_img_right = imread("../dataset/sequences/00/image_1/000000.png", IMREAD_GRAYSCALE);
-	
-
-	imshow("first left image", first_img_left);
-	imshow("first right image", first_img_right);
-
-	waitKey();
-	destroyWindow("first left image");
-	destroyWindow("first right image");
-
-
-
-	/*
-	 *	Part II - Stereo Depth & Visual Odometry
-	 */
-
-	 /***********************************************************************************
-		 Compute disparity using StereoBM
-
-		 Using Functions:
-			 computeLeftDisparityMap()
-
-	 ***********************************************************************************/
-	Mat disp = method.computeLeftDisparityMap(first_img_left, first_img_right, SGBM, false);
-
-	Mat color_disp;
-	//disp.convertTo(color_disp, first_img_left.type());
-	applyColorMap(color_disp, color_disp, COLORMAP_VIRIDIS);
-	imshow("first images disparity map using StereoBM", color_disp);
-
-	waitKey();
-
-
-	/***********************************************************************************
-		Now to compare this to StereoSGBM
-	***********************************************************************************/
-	disp = method.computeLeftDisparityMap(first_img_left, first_img_right, SGBM, false);
-
-	disp.convertTo(color_disp, first_img_left.type());
-	applyColorMap(color_disp, color_disp, COLORMAP_VIRIDIS);
-	imshow("first images disparity map using StereoSGBM", color_disp);
-
-	waitKey();
-	destroyWindow("first images disparity map using StereoBM");
-	destroyWindow("first images disparity map using StereoSGBM");
-	system("cls");
-
-	/***********************************************************************************
-		We can see that StereoSGBM takes around 3x as long, but produces a much more
-		contiguous disparity map, with less gaps in information
-
-		We can see that there is a gap of the left side of the image where the right
-		camera did not have matching information. This means that we should apply a
-		mask when looking for features to match from one frame to the next so that we
-		can use features which fall in the area of the picture for which we have depth
-		information.
-	***********************************************************************************/
-
-
-
-	/***********************************************************************************
-		Now we want to get depth map.
-		It will require the disparity map of the desire pair of images, and the
-		intrinsic matrix, translation vector, and translation vector of the pair of
-		cameras.
-		We just got the disparity map of the first pair of images, so we are going to
-		get the other 3 requirements by decomposing the projection matrices.
-
-		Using Functions:
-			decompose_Projection_Matrix()
-
-	***********************************************************************************/
-	Mat k_left, r_left, t_left;
-	Mat k_right, r_right, t_right;
-	method.decompose_Projection_Matrix(P0, &k_left, &r_left, &t_left);
-	method.decompose_Projection_Matrix(P1, &k_right, &r_right, &t_right);
-
-
-
-
-	/***********************************************************************************
-		Now we can generate the depth map.
-
-		Using Functions:
-			calc_depth_map()
-
-	***********************************************************************************/
-	Mat depth = method.calc_depth_map(disp, k_left, t_left, t_right, true);
-
-	Mat color_depth;
-	depth.convertTo(color_depth, first_img_left.type());
-	applyColorMap(color_depth, color_depth, COLORMAP_VIRIDIS);
-	imshow("depth map", color_depth);
-
-	/***********************************************************************************
-		Let's see what the depth is in the yellow band to the left
-
-	***********************************************************************************/
-	printf("\n\ndepth[0, 0] = %f\n", depth.at<float>(0, 0));
-
-	/***********************************************************************************
-		Let's see if this is the same as the maximum estimated depth
-
-	***********************************************************************************/
-	float depth_max = 0.0;
-	for (int i = 0; i < depth.rows; i++)
-		for (int j = 0; j < depth.cols; j++)
-			if (depth.at<float>(i, j) > depth_max)
-				depth_max = depth.at<float>(i, j);
-	printf("depth_max = %f\n", depth_max);
-
-	/***********************************************************************************
-		We want to find the width of the yellow band, in order to create a mask to
-		prevent the feature detector from searching in a useless area for features
-		on every frame, which would waste time.
-
-	***********************************************************************************/
-	for (int i = 0; i < depth.cols; i++)
-		if (depth.at<float>(4, i) < depth_max)
-		{
-			printf("First non-max value at index %d\n", i);
-			break;
-		}
-
-	waitKey();
-	destroyWindow("depth map");
-
-	/***********************************************************************************
-		We can constuct a mask using this information like so
-
-	***********************************************************************************/
-	Mat mask = Mat::zeros(depth.rows, depth.cols, CV_8U);
-	mask(Rect(96, 0, depth.cols - 96, depth.rows)) = 255;
-
-	Mat color_mask;
-	applyColorMap(mask, color_mask, COLORMAP_VIRIDIS);
-	imshow("MASK", color_mask);
-	waitKey();
-	destroyWindow("MASK");
-
-
-	/***********************************************************************************
-		Ok. Now we make an all-inclusive function to get the depth from an incoming
-		set of stereo images
-
-		<-- see stereo_2_depth() in Method.cpp
-	***********************************************************************************/
-
-
-
-
-
-	/***********************************************************************************
-		Look at matched points using sgbm matcher.
-
-	***********************************************************************************/
-	depth = method.stereo_2_depth(first_img_left,
-		first_img_right,
-		P0,
-		P1,
-		SGBM,
-		false,
-		true);
-
-	system("cls");
-
-	/***********************************************************************************
-		First, we extract features of 1st and 2nd images of the left camera.
-		By input the images and mask, the extract_features() function will give us kp,
-		which is an array of keypoints (feature points), and the descriptors of these
-		points.
-
-		vector	KeyPoint				 Mat[0]	 128 data to describe features
-
-		kp[0]	(x0, y0)		-->		 des[0]  (data0, data1, ..., data127)
-		kp[1]	(x1, y1)		-->		 des[1]  (data0, data1, ..., data127)
-		.									.
-		.									.
-		.									.
-		kp[n]	(xn, yn)		-->		 des[n]  (data0, data1, ..., data127)
-
-	***********************************************************************************/
-	Mat des0, des1;
-	vector<KeyPoint> kp0, kp1;
-	Mat second_img_left = imread("../dataset/sequences/00/image_0/000001.png", IMREAD_GRAYSCALE);
-	des0 = method.extract_features(first_img_left, Sift, mask, &kp0);
-	des1 = method.extract_features(second_img_left, Sift, mask, &kp1);
-
-
-	/***********************************************************************************
-		We got the keypoints and their descriptors of the 1st and 2nd image of the
-		left camera.
-		Next, we'll match those keypoints by their desciptors using knn. We set k=2
-		here, so for each pair kp0, there will be 2 kp1 that are the most similar and
-		second most similar, according to their descriptors.
-
-		Conclusion: each kp0 has kp1_1, kp1_2, after matching feature
-
-		Each matches[i] corresponses to kp0[i], where matches[i][0] = kp1_1 and
-		matches[i][1] = kp1_2
-
-	***********************************************************************************/
-	vector<vector<DMatch>> matches = method.match_features(des0, des1, BF, Sift, true, 2);
-
-	printf("Number of matches before filtering : %d\n", matches.size());
-	method.visualize_matches(first_img_left, kp0, second_img_left, kp1, matches);
-
-
-	/***********************************************************************************
-		The reason we take 2 matching points for each kp0 instead of 1, is that if kp0
-		is similar to kp1_1 and kp1_2, then we can assume that kp0 is not distinct
-		enough.
-		So, we filter kp0 by comparing kp1_2 and kp1_1*dist_threshold. If kp1_2 <=
-		kp1_1*dist_threshold, then we say kp0 is distinct enough to be a match.
-
-	***********************************************************************************/
-	matches = method.filter_matches_distance(matches, 0.3);
-	printf("Number of matches after filtering : %d\n", matches.size());
-	method.visualize_matches(first_img_left, kp0, second_img_left, kp1, matches);
-
-
-
-
-
-
-	/***********************************************************************************
-		Now to see the difference with 'bm' matcher
-
-	***********************************************************************************/
-	depth = method.stereo_2_depth(first_img_left,
-		first_img_right,
-		P0,
-		P1,
-		BM,
-		false,
-		true);
-
-	system("cls");
-
-	des0 = method.extract_features(first_img_left, Sift, mask, &kp0);
-	des1 = method.extract_features(second_img_left, Sift, mask, &kp1);
-	matches = method.match_features(des0, des1, BF, Sift, true, 2);
-	printf("Number of matches before filtering : %d\n", matches.size());
-	method.visualize_matches(first_img_left, kp0, second_img_left, kp1, matches);
-
-	matches = method.filter_matches_distance(matches, 0.3);
-	printf("Number of matches after filtering : %d\n", matches.size());
-	method.visualize_matches(first_img_left, kp0, second_img_left, kp1, matches);
-
-	/***********************************************************************************
-		We can see that the 'bm' matcher is around 5x faster than the 'sgbm' matcher,
-		and produced the same number of matches.Since speed is essential, we will use
-		the 'bm' matcher
-
-	***********************************************************************************/
-
-
-
-
-	/***********************************************************************************
-		Now to see the difference with ORB descriptor
-
-	***********************************************************************************/
-	/*depth = method.stereo_2_depth(first_img_left,
-		first_img_right,
-		P0,
-		P1,
-		BM,
-		false,
-		true);
-
-	system("cls");
-
-	des0 = method.extract_features(first_img_left, Orb, mask, &kp0);
-	des1 = method.extract_features(second_img_left, Orb, mask, &kp1);
-	matches = method.match_features(des0, des1, BF, Orb, true, 2);
-	printf("Number of matches before filtering : %d\n", matches.size());
-	method.visualize_matches(first_img_left, kp0, second_img_left, kp1, matches);
-
-	matches = method.filter_matches_distance(matches, 0.8);
-	printf("Number of matches after filtering : %d\n", matches.size());
-	method.visualize_matches(first_img_left, kp0, second_img_left, kp1, matches);*/
-
-	Mat rmat, tvec, image1_points, image2_points, trans_mat;
-	method.estimate_motion(matches, kp0, kp1, k_left, depth, 3000, rmat, tvec, image1_points, image2_points);
-
-	Mat I4 = Mat::eye(4, 4, CV_64F);
-	hconcat(rmat, tvec, trans_mat);
-	vconcat(trans_mat, I4.row(3), trans_mat);
-
-
-	cout << "t_tot:\n" << trans_mat << endl;
-	cout << "\n\nt_tot_inv:\n" << trans_mat.inv() << endl;
-}
