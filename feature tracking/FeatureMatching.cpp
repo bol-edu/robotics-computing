@@ -1,149 +1,130 @@
 #include "FeatureMatching.h"
+#include <limits.h>
 
-using namespace cv;
-
-vector<DMatch> FeatureMatching::match_features(Mat des1, Mat des2, int detector, bool sorting, float dist_threshold)
+void match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match)
 {
-	vector<vector<DMatch>> matches;
-	clock_t start = clock();
+    DMatch matches[MAX_KEYPOINT_NUM][2];
+    uchar queryDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL];
+    uchar trainDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL];
+    for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
+    {
+        for (int j = 0; j < DESCRIPTOR_COL; j++)
+        {
+            queryDescriptors[i][j] = des0[i * DESCRIPTOR_COL + j];
+            trainDescriptors[i][j] = des1[i * DESCRIPTOR_COL + j];
+        }
+    }
 
-	__knnMatch(des1, des2, matches, 2);
+    knnMatch(queryDescriptors, trainDescriptors, matches);
 
-	clock_t end = clock();
-
-	printf("\tTime to match keypoints using BF: %lld ms\n\n", end - start);
-
-	vector<DMatch> filtered_match;
-	for (int m = 0; m < matches.size(); m++)
-	{
-
-		if (matches[m][0].distance <= dist_threshold * matches[m][1].distance)
-		{
-			filtered_match.push_back(matches[m][0]);
-		}
-	}
-	return filtered_match;
+    //match_size = 0;
+    match[2 * MAX_KEYPOINT_NUM];
+    for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
+    {
+        if (matches[i][0].distance <= dist_threshold * matches[i][1].distance)
+        {
+            match[2 * i] = matches[i][0].queryIndex;
+            match[2 * i + 1] = matches[i][0].trainIndex;
+            //match_size++;
+        }
+    }
+    return;
 }
 
-void FeatureMatching::__knnMatch(InputArray _queryDescriptors, InputArray _trainDescriptors,
-    vector<vector<DMatch>>& matches, int knn)
+void knnMatch(uchar queryDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+              uchar trainDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+              DMatch matches[MAX_KEYPOINT_NUM][2])
 {
-
     const int IMGIDX_SHIFT = 18;
     const int IMGIDX_ONE = (1 << IMGIDX_SHIFT);
 
-    Mat queryDescriptors = _queryDescriptors.getMat();
-    Mat trainDescriptors = _trainDescriptors.getMat();
+    int32 dist[MAX_KEYPOINT_NUM][2];
+    int32 nidx[MAX_KEYPOINT_NUM][2];
 
-    matches.reserve(queryDescriptors.rows);
+    batchDistance(queryDescriptors, trainDescriptors, dist, nidx);
 
-    Mat dist, nidx;
-
-    int dtype = CV_32S;
-
-    __batchDistance(queryDescriptors, trainDescriptors, dist, dtype, nidx,
-        NORM_HAMMING2, knn);
-
-    Mat temp;
-    dist.convertTo(temp, CV_32F);
-    dist = temp;
-
-    for (int qIdx = 0; qIdx < queryDescriptors.rows; qIdx++)
+    for (int qIdx = 0; qIdx < MAX_KEYPOINT_NUM; qIdx++)
     {
-        const float* distptr = dist.ptr<float>(qIdx);
-        const int* nidxptr = nidx.ptr<int>(qIdx);
-
-        matches.push_back(vector<DMatch>());
-        vector<DMatch>& mq = matches.back();
-        mq.reserve(knn);
-
-        for (int k = 0; k < nidx.cols; k++)
+        for (int k = 0; k < K; k++)
         {
-            if (nidxptr[k] < 0)
+            if (nidx[qIdx][k] < 0)
                 break;
-            mq.push_back(DMatch(qIdx, nidxptr[k] & (IMGIDX_ONE - 1),
-                nidxptr[k] >> IMGIDX_SHIFT, distptr[k]));
+            matches[qIdx][k].queryIndex = qIdx;
+            matches[qIdx][k].trainIndex = nidx[qIdx][k];
+            matches[qIdx][k].distance = dist[qIdx][k];
         }
-
     }
-    cout << "================== " << matches[0][0].distance << endl;
-    cout << "================== " << matches[1][0].distance << endl;
-    cout << "================== " << matches[2][0].distance << endl;
 }
 
-
-void FeatureMatching::__batchDistance(InputArray _src1, InputArray _src2,
-    OutputArray _dist, int dtype, OutputArray _nidx,
-    int normType, int K)
+void batchDistance(uchar src1[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+                   uchar src2[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+                   int32 dist[MAX_KEYPOINT_NUM][2],
+                   int32 nidx[MAX_KEYPOINT_NUM][2])
 {
+    for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
+        for (int j = 0; j < 2; j++)
+        {
+            dist[i][j] = INT_MAX;
+            nidx[i][j] = -1;
+        }
 
-    Mat src1 = _src1.getMat(), src2 = _src2.getMat();
-    int type = src1.type();
+    int32 buf[MAX_KEYPOINT_NUM];
 
-
-    K = min(K, src2.rows);
-
-    _dist.create(src1.rows, (K > 0 ? K : src2.rows), dtype);
-    Mat dist = _dist.getMat(), nidx;
-
-    _nidx.create(dist.size(), CV_32S);
-    nidx = _nidx.getMat();
-
-    dist = Scalar::all(dtype == CV_32S ? (double)INT_MAX : (double)FLT_MAX);
-    nidx = Scalar::all(-1);
-
-    AutoBuffer<int> buf(src2.rows);
-    int* bufptr = buf.data();
-
-    for (int i = 0; i < src1.rows; i++)
+    for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
-        __batchDistHamming2_((uchar*)src1.ptr(i), (uchar*)src2.ptr(), 
-            src2.step, src2.rows, src2.cols, (int*)bufptr);
+        uchar a[32];
+        for (int j = 0; j < 32; j++)
+        {
+            a[j] = src1[(i * 32 + j) / DESCRIPTOR_COL][(i * 32 + j) % DESCRIPTOR_COL];
+        }
+        batchDistHamming2(a, src2, buf);
 
-
-        int* nidxptr = nidx.ptr<int>(i);
-        int* distptr = (int*)dist.ptr(i);
-
+        // since positive float's can be compared just like int's,
+        // we handle both CV_32S and CV_32F cases with a single branch
         int j, k;
 
-        for (j = 0; j < src2.rows; j++)
+        for (j = 0; j < MAX_KEYPOINT_NUM; j++)
         {
-            int d = bufptr[j];
-            if (d < distptr[K - 1])
+            int d = buf[j];
+            if (d < dist[i][K - 1])
             {
-                for (k = K - 2; k >= 0 && distptr[k] > d; k--)
+                for (k = K - 2; k >= 0 && dist[i][k] > d; k--)
                 {
-                    nidxptr[k + 1] = nidxptr[k];
-                    distptr[k + 1] = distptr[k];
+                    nidx[i][k + 1] = nidx[i][k];
+                    dist[i][k + 1] = dist[i][k];
                 }
-                nidxptr[k + 1] = j;
-                distptr[k + 1] = d;
+                nidx[i][k + 1] = j;
+                dist[i][k + 1] = d;
             }
         }
     }
 }
 
-
-void FeatureMatching::__batchDistHamming2_(const uchar* src1, const uchar* src2, size_t step2,
-    int nvecs, int len, int* dist)
+void batchDistHamming2(const uchar src1[DESCRIPTOR_COL],
+                       const uchar src2[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+                       int dist[MAX_KEYPOINT_NUM])
 {
-    const uchar tab[256] =
+    uchar b[32];
+    int step = 0;
+    for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
-        0, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3,
-        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3,
-        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
-        2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
-        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
-        2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
-        1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
-        2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4
-    };
-
-    step2 /= sizeof(src2[0]);
-
-    for (int i = 0; i < nvecs; i++) 
-    {
-        for (int j = 0; j < len; j++)   // len = 32
-            dist[i] += tab[src1[j] ^ src2[j]];
+        for (int j = 0; j < 32; j++)
+        {
+            b[j] = src2[(i * 32 + j) / DESCRIPTOR_COL][(i * 32 + j) % DESCRIPTOR_COL];
+        }
+        dist[i] = normHamming(src1, b);
     }
+    // system("pause");
+}
+
+int normHamming(const uchar a[DESCRIPTOR_COL], const uchar b[32])
+{
+    const uchar *tab = popCountTable2;
+    int result = 0;
+    for (int i = 0; i < 32; i++)
+    {
+        result += tab[a[i] ^ b[i]];
+        // printf("i = %d, a[i] = %d, b[i] = %d\n", i, a[i], b[i]);
+    }
+    return result;
 }

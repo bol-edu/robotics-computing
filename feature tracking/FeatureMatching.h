@@ -1,25 +1,43 @@
-#pragma once
-#include<opencv2/opencv.hpp>
-#include<vector>
-#include<iostream>
 
-using namespace std;
+typedef int int32;
+typedef unsigned char uchar;
+typedef float FLOAT;
 
-class FeatureMatching
+#define MAX_KEYPOINT_NUM 500
+#define DESCRIPTOR_COL 128
+#define K 2
+
+struct DMatch
 {
-private:
-    void knnMatch(cv::InputArray queryDescriptors, cv::InputArray trainDescriptors,
-        vector<vector<cv::DMatch> >& matches, int k);
-
-    void batchDistance(cv::InputArray _src1, cv::InputArray _src2,
-        cv::OutputArray _dist, int dtype, cv::OutputArray nidx,
-        int normType, int K);
-
-    void __batchDistHamming2(const uchar* src1, const uchar* src2, size_t step2,
-        int nvecs, int len, int* dist);
-
-    int __normHamming(const uchar* a, const uchar* b, int n, int cellSize);
-
-public:
-    vector<cv::DMatch> match_features(cv::Mat des1, cv::Mat des2, int detector, bool sorting, float dist_threshold);
+	int queryIndex;
+	int trainIndex;
+	int distance;
 };
+
+static const uchar popCountTable2[] =
+	{
+		0, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3,
+		1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3,
+		1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+		2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+		1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+		2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+		1, 2, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4,
+		2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4};
+
+void match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match);
+
+void knnMatch(uchar queryDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+			  uchar trainDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+			  DMatch matches[MAX_KEYPOINT_NUM][2]);
+
+void batchDistance(uchar src1[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+				   uchar src2[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+				   int32 dist[MAX_KEYPOINT_NUM][2],
+				   int32 nidx[MAX_KEYPOINT_NUM][2]);
+
+void batchDistHamming2(const uchar src1[DESCRIPTOR_COL],
+					   const uchar src2[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
+					   int dist[MAX_KEYPOINT_NUM]);
+
+int normHamming(const uchar a[DESCRIPTOR_COL], const uchar b[32]);
