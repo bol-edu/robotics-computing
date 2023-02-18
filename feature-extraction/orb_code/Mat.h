@@ -1277,7 +1277,7 @@ void Mat::create_ker()
     step[1] = 4;
     rows = 7;
     cols = 1;
-    static unsigned char ch_k[7 * 1];
+    static unsigned char ch_k[28];
 
     data = ch_k;
 
