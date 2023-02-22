@@ -23,9 +23,9 @@ The brief introduction can be found in the [slide](./doc/motion_estimation.pdf).
   ```cpp
   void estimate(Matrix &match, Matrix &kp0, Matrix &kp1, Matrix &k, Matrix &depth, Matrix &rmat, Matrix &tvec);
   ```
-  
-  
-- ### What we have
+
+- ### Projection
+  Before doing the math part, we need to modify the input to match the requirement. Because we're using PnP, which solves relative motion cv problem by 2D-3D points. As a result, we project 1st left image's keypoints to 3D point through depth map and camera matrix. Also we align 2 sets of keypoints through matched index.
 
 <p align="center">
   <img src="./img/Motion%20Estimation%20block%20diagram.png" />
