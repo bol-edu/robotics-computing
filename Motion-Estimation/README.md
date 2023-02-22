@@ -21,13 +21,7 @@ The brief introduction can be found in the [slide](./doc/motion_estimation.pdf).
   Now we are looking for Rotation matrix ***rmat*** and translation vector ***tvec*** to estimate the relative motion between 1st and 2nd images. 
 
   ```cpp
-  void estimate(Matrix &match, 
-                Matrix &kp0, 
-                Matrix &kp1,
-                Matrix &k, 
-                Matrix &depth,
-                Matrix &rmat, 
-                Matrix &tvec);
+  void estimate(Matrix &match, Matrix &kp0, Matrix &kp1, Matrix &k, Matrix &depth, Matrix &rmat, Matrix &tvec);
   ```
   
   
