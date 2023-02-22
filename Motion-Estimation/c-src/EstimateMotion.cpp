@@ -100,7 +100,6 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
         Matrix subopoint, subipoint;
         getSubset(opoint, ipoint, subopoint, subipoint);
 
-        cout << "opoint: " << subopoint << endl;
         Matrix rmat, tvec;
         EPnP epnp = EPnP(subopoint, subipoint, fx, fy, cx, cy);
         epnp.compute(rmat, tvec);
@@ -142,7 +141,6 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
             }
         }
     }
-    system("pause");
 
     Matrix opoint_inlier = Matrix(maxGoodCount, 3);
     Matrix ipoint_inlier = Matrix(maxGoodCount, 2);
