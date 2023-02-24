@@ -17,7 +17,7 @@ void match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match)
 
     knnMatch(queryDescriptors, trainDescriptors, matches);
 
-    //match_size = 0;
+    // match_size = 0;
     match[2 * MAX_KEYPOINT_NUM];
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
@@ -25,7 +25,7 @@ void match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match)
         {
             match[2 * i] = matches[i][0].queryIndex;
             match[2 * i + 1] = matches[i][0].trainIndex;
-            //match_size++;
+            // match_size++;
         }
     }
     return;
@@ -72,12 +72,7 @@ void batchDistance(uchar src1[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
 
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
-        uchar a[32];
-        for (int j = 0; j < 32; j++)
-        {
-            a[j] = src1[(i * 32 + j) / DESCRIPTOR_COL][(i * 32 + j) % DESCRIPTOR_COL];
-        }
-        batchDistHamming2(a, src2, buf);
+        batchDistHamming2(src1[i], src2, buf);
 
         // since positive float's can be compared just like int's,
         // we handle both CV_32S and CV_32F cases with a single branch
@@ -104,27 +99,20 @@ void batchDistHamming2(const uchar src1[DESCRIPTOR_COL],
                        const uchar src2[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
                        int dist[MAX_KEYPOINT_NUM])
 {
-    uchar b[32];
     int step = 0;
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
-        for (int j = 0; j < 32; j++)
-        {
-            b[j] = src2[(i * 32 + j) / DESCRIPTOR_COL][(i * 32 + j) % DESCRIPTOR_COL];
-        }
-        dist[i] = normHamming(src1, b);
+        dist[i] = normHamming(src1, src2[i]);
     }
-    // system("pause");
 }
 
-int normHamming(const uchar a[DESCRIPTOR_COL], const uchar b[32])
+int normHamming(const uchar a[DESCRIPTOR_COL], const uchar b[DESCRIPTOR_COL])
 {
     const uchar *tab = popCountTable2;
     int result = 0;
-    for (int i = 0; i < 32; i++)
+    for (int i = 0; i < DESCRIPTOR_COL; i++)
     {
         result += tab[a[i] ^ b[i]];
-        // printf("i = %d, a[i] = %d, b[i] = %d\n", i, a[i], b[i]);
     }
     return result;
 }
