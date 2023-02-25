@@ -10,7 +10,7 @@
         a = b;     \
         b = temp;  \
     }
-static FLOAT sqrarg;
+static FLOAT_t sqrarg;
 #define SQR(a) ((sqrarg = (a)) == 0.0 ? 0.0 : sqrarg * sqrarg)
 #define MAX(a, b) (a > b ? a : b)
 #define MIN(a, b) (a < b ? a : b)
@@ -27,14 +27,14 @@ int32_t *FIND(int32_t *first, int32_t *last, int32_t val)
     return last;
 }
 
-int32_t ROUND(FLOAT x)
+int32_t ROUND(FLOAT_t x)
 {
     return (int32_t)(x > 0 ? x + 0.5 : x - 0.5);
 }
 
-FLOAT POW(FLOAT a, int32_t n)
+FLOAT_t POW(FLOAT_t a, int32_t n)
 {
-    FLOAT b = 1.0;
+    FLOAT_t b = 1.0;
     for (int i = 0; i < n; i++)
         b *= a;
     return b;
@@ -69,9 +69,9 @@ void EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1,
     int j = 0;
     for (int i = 0; i < match.m; i++)
     {
-        FLOAT u = kp0.val[(int)(match.val[i][0])][0];
-        FLOAT v = kp0.val[(int)(match.val[i][0])][1];
-        FLOAT z = (FLOAT)depth.val[(int)v][(int)u];
+        FLOAT_t u = kp0.val[(int)(match.val[i][0])][0];
+        FLOAT_t v = kp0.val[(int)(match.val[i][0])][1];
+        FLOAT_t z = (FLOAT_t)depth.val[(int)v][(int)u];
         if (z > max_depth)
             continue;
 
@@ -100,7 +100,6 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
         Matrix subopoint, subipoint;
         getSubset(opoint, ipoint, subopoint, subipoint);
 
-        cout << "opoint: " << subopoint << endl;
         Matrix rmat, tvec;
         EPnP epnp = EPnP(subopoint, subipoint, fx, fy, cx, cy);
         epnp.compute(rmat, tvec);
@@ -127,22 +126,21 @@ void EstimateMotion::RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Ma
                 best_mask[i] = mask[i];
             maxGoodCount = goodCount;
             {
-                FLOAT ep = (double)(count - goodCount) / count;
+                FLOAT_t ep = (double)(count - goodCount) / count;
                 ep = MAX(ep, 0.);
                 ep = MIN(ep, 1.);
 
-                FLOAT denom = 1. - POW(1. - ep, 5);
+                FLOAT_t denom = 1. - POW(1. - ep, 5);
                 if (denom < DBL_MIN)
                     niters = 0;
 
-                FLOAT num = std::log(1 - confidence);
+                FLOAT_t num = std::log(1 - confidence);
                 denom = std::log(denom);
 
                 niters = denom >= 0 || -num >= niters * (-denom) ? niters : ROUND(num / denom);
             }
         }
     }
-    system("pause");
 
     Matrix opoint_inlier = Matrix(maxGoodCount, 3);
     Matrix ipoint_inlier = Matrix(maxGoodCount, 2);

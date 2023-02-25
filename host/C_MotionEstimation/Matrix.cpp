@@ -7,7 +7,7 @@
         a = b;     \
         b = temp;  \
     }
-static FLOAT sqrarg;
+static FLOAT_t sqrarg;
 #define SQR(a) ((sqrarg = (a)) == 0.0 ? 0.0 : sqrarg * sqrarg)
 #define MAX(a, b) (a > b ? a : b)
 #define MIN(a, b) (a < b ? a : b)
@@ -24,7 +24,7 @@ Matrix::Matrix(const int32_t r_, const int32_t c_)
     allocateMemory(r_, c_);
 }
 
-Matrix::Matrix(const int32_t r_, const int32_t c_, const FLOAT *val_)
+Matrix::Matrix(const int32_t r_, const int32_t c_, const FLOAT_t *val_)
 {
     allocateMemory(r_, c_);
     int32_t k = 0;
@@ -38,7 +38,7 @@ Matrix::Matrix(const Matrix &M)
 {
     allocateMemory(M.m, M.n);
     for (int32_t i = 0; i < M.m; i++)
-        memcpy(val[i], M.val[i], M.n * sizeof(FLOAT));
+        memcpy(val[i], M.val[i], M.n * sizeof(FLOAT_t));
 }*/
 
 Matrix::~Matrix()
@@ -55,8 +55,8 @@ void Matrix::allocateMemory(const int32_t r_, const int32_t c_)
         val = 0;
         return;
     }
-    val = (FLOAT **)malloc(m * sizeof(FLOAT *));
-    val[0] = (FLOAT *)calloc(m * n, sizeof(FLOAT));
+    val = (FLOAT_t **)malloc(m * sizeof(FLOAT_t *));
+    val[0] = (FLOAT_t *)calloc(m * n, sizeof(FLOAT_t));
     for (int32_t i = 1; i < m; i++)
         val[i] = val[i - 1] + n;
 }
@@ -113,7 +113,7 @@ Matrix &Matrix::operator=(const Matrix &M)
         }
         if (M.n > 0)
             for (int32_t i = 0; i < M.m; i++)
-                memcpy(val[i], M.val[i], M.n * sizeof(FLOAT));
+                memcpy(val[i], M.val[i], M.n * sizeof(FLOAT_t));
     }
     return *this;
 }
@@ -167,7 +167,7 @@ Matrix Matrix::operator*(const Matrix &M)
     return C;
 }
 
-Matrix Matrix::operator*(const FLOAT &s)
+Matrix Matrix::operator*(const FLOAT_t &s)
 {
     Matrix C(m, n);
     for (int32_t i = 0; i < m; i++)
@@ -176,7 +176,7 @@ Matrix Matrix::operator*(const FLOAT &s)
     return C;
 }
 
-FLOAT Matrix::dot(const FLOAT *v1, const FLOAT *v2)
+FLOAT_t Matrix::dot(const FLOAT_t *v1, const FLOAT_t *v2)
 {
     return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
 }
@@ -229,7 +229,7 @@ Matrix Matrix::multrans()
     return C;
 }
 
-bool Matrix::solve(const Matrix &M, FLOAT eps)
+bool Matrix::solve(const Matrix &M, FLOAT_t eps)
 {
 
     // substitutes
@@ -249,7 +249,7 @@ bool Matrix::solve(const Matrix &M, FLOAT eps)
 
     // loop variables
     int32_t i, icol, irow, j, k, l, ll;
-    FLOAT big, dum, pivinv, temp;
+    FLOAT_t big, dum, pivinv, temp;
 
     // initialize pivots to zero
     for (j = 0; j < m; j++)
@@ -365,11 +365,11 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
     U2 = Matrix(m, m);
     V = Matrix(n, n);
 
-    FLOAT *w = (FLOAT *)malloc(n * sizeof(FLOAT));
-    FLOAT *rv1 = (FLOAT *)malloc(n * sizeof(FLOAT));
+    FLOAT_t *w = (FLOAT_t *)malloc(n * sizeof(FLOAT_t));
+    FLOAT_t *rv1 = (FLOAT_t *)malloc(n * sizeof(FLOAT_t));
 
     int32_t flag, i, its, j, jj, k, l, nm;
-    FLOAT anorm, c, f, g, h, s, scale, x, y, z;
+    FLOAT_t anorm, c, f, g, h, s, scale, x, y, z;
 
     g = scale = anorm = 0.0; // Householder reduction to bidiagonal form.
     for (i = 0; i < n; i++)
@@ -496,12 +496,12 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
             for (l = k; l >= 0; l--)
             { // Test for splitting.
                 nm = l - 1;
-                if ((FLOAT)(fabs(rv1[l]) + anorm) == anorm)
+                if ((FLOAT_t)(fabs(rv1[l]) + anorm) == anorm)
                 {
                     flag = 0;
                     break;
                 }
-                if ((FLOAT)(fabs(w[nm]) + anorm) == anorm)
+                if ((FLOAT_t)(fabs(w[nm]) + anorm) == anorm)
                 {
                     break;
                 }
@@ -514,7 +514,7 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
                 {
                     f = s * rv1[i];
                     rv1[i] = c * rv1[i];
-                    if ((FLOAT)(fabs(f) + anorm) == anorm)
+                    if ((FLOAT_t)(fabs(f) + anorm) == anorm)
                         break;
                     g = w[i];
                     h = pythag(f, g);
@@ -603,9 +603,9 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
     // by decreasing magnitude. Also, signs of corresponding columns are
     // flipped so as to maximize the number of positive elements.
     int32_t s2, inc = 1;
-    FLOAT sw;
-    FLOAT *su = (FLOAT *)malloc(m * sizeof(FLOAT));
-    FLOAT *sv = (FLOAT *)malloc(n * sizeof(FLOAT));
+    FLOAT_t sw;
+    FLOAT_t *su = (FLOAT_t *)malloc(m * sizeof(FLOAT_t));
+    FLOAT_t *sv = (FLOAT_t *)malloc(n * sizeof(FLOAT_t));
     do
     {
         inc *= 3;
@@ -671,9 +671,9 @@ void Matrix::svd(Matrix &U2, Matrix &W, Matrix &V)
     free(sv);
 }
 
-FLOAT Matrix::pythag(FLOAT a, FLOAT b)
+FLOAT_t Matrix::pythag(FLOAT_t a, FLOAT_t b)
 {
-    FLOAT absa, absb;
+    FLOAT_t absa, absb;
     absa = fabs(a);
     absb = fabs(b);
     if (absa > absb)

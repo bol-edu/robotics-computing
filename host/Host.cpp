@@ -16,7 +16,7 @@
 //#include <common/xf_headers.hpp>
 #include "Host.hpp"
 #include "BasicFunction.hpp"
-#include "C_StereoMatching/Methods.h"			//stereo_2_depth(unsigned char* image_left_test_data, unsigned char* image_right_test_data, unsigned char* k_left_test_data, unsigned char* t_left_test_data, unsigned char* t_right_test_data, bool matcher, bool rgb, bool rectified, unsigned char* depth_map);
+#include "C_StereoMatching/Methods_S.h"			//stereo_2_depth(unsigned char* image_left_test_data, unsigned char* image_right_test_data, unsigned char* k_left_test_data, unsigned char* t_left_test_data, unsigned char* t_right_test_data, bool matcher, bool rgb, bool rectified, unsigned char* depth_map);
 #include "C_FeatureExtraction/Methods.h"		//extract_features(unsigned char* image_data, unsigned char* mask_data, float* kp_xy, unsigned char* des_data);
 #include "C_FeatureTracking/FeatureMatching.h"	//match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match);
 #include "C_MotionEstimation/EstimateMotion.h"	//EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1, Matrix &k, Matrix &depth, Matrix &rmat, Matrix &tvec);
@@ -129,7 +129,7 @@ int main(int argc, const char** argv) {
 	Mask = cv::Mat::zeros(height, width, CV_8U);
 	Mask(cv::Rect(96, 0, width - 96, height)) = 255;
 
-	cv::Mat T_tot = cv::Mat::eye(4, 4, CV_64F);
+	cv::Mat T_tot = cv::Mat::eye(4, 4, CV_32F);
 	vector<cv::Mat> trajectory(FRAME_NUM);
 	cv::Rect rect(0, 0, 4, 3);
 	T_tot(rect).copyTo(trajectory[0]);
@@ -389,27 +389,25 @@ int main(int argc, const char** argv) {
 	std::cout << "HOST-Info: ============================================================= " << endl;
 	#endif
 
-	ofstream fout_KP0, fout_KP1, fout_Des0, fout_Des1, fout;
-	//fout.open("Mask.txt", ios::out);
-	//fout << Mask;
 
-	for(int i=0; i<10; i++){
+	
+	for(int i=0; i<FRAME_NUM-1; i++){
 
 		//ImgLeft_0 = ImgLeft_1;
 		ImgLeft_0 = cv::imread(Img_Left_Set[i], cv::IMREAD_GRAYSCALE);
-		cout << Img_Left_Set[i] << "\n";
-		fout.close();
 		ImgRight_0 = cv::imread(Img_Right_Set[i], cv::IMREAD_GRAYSCALE);
 		ImgLeft_1 = cv::imread(Img_Left_Set[i+1], cv::IMREAD_GRAYSCALE);
 
-		cout << "iteration: " << i << endl;
 
-//stereo_2_depth(Mat img_left, Mat img_right, Mat k_left, Mat t_left, Mat t_right, bool matcher, bool rgb, bool rectified)
-//extract_features(unsigned char* image_data, unsigned char* mask_data, float* kp_xy, unsigned char* des_data);
-//match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match);
-//EstimateMotion::estimate(Matrix &match, Matrix &kp0, Matrix &kp1, Matrix &k, Matrix &depth, Matrix &rmat, Matrix &tvec);
+		#ifdef _INFO_
+			cout << endl << endl << endl << "=================== Iteration: " << i << " ==================== " << endl;
+			cout << "ImgLeft_0: " << Img_Left_Set[i] << endl << endl;
+		#endif	
 		
 		#ifdef _ONLY_K_StereoMatching_ 
+			#ifdef _INFO_
+				cout << "Compute Stereo Matching Using HLS..." << endl;
+			#endif
 			/**
 			 * 	
 			 * Extract the Mat.data pointer
@@ -417,14 +415,21 @@ int main(int argc, const char** argv) {
 			 * Submit kernel function
 			 * Enqueue the task
 			 * Transfer the result to host
-			 * 
+			 *
 			 */
 		#else
-			cv::Mat Depth(height, width, CV_8U);
+			#ifdef _INFO_
+				cout << "Compute Stereo Matching Using C..." << endl;
+			#endif
 
-			//stereo_2_depth((unsigned char*)ImgLeft_0.data, (unsigned char*)ImgRight_0.data, (unsigned char*)K_Left.data, (unsigned char*)T_Left.data, (unsigned char*)T_Right.data, (bool)1, (bool)0, (bool)1, (unsigned char*)Depth.data);
-			
-			
+			cv::Mat Depth(height, width, CV_32F);
+			int it = 1;
+			stereo_2_depth(ImgLeft_0.data, ImgRight_0.data, K_Left.data, T_Left.data, T_Right.data, true, false, true, Depth.data);
+
+			#ifdef _PRINT_
+				string Depth_name = "Output/C_StereoMatching/Depth_iteration" + std::to_string(i) + ".txt";
+				BasicFunction::print_content(Depth_name, &Depth);
+			#endif
 		#endif
 
 
@@ -441,57 +446,29 @@ int main(int argc, const char** argv) {
 			 * 
 			 */
 		#else
-			float *KP0 = new float[1000];
-			float *KP1 = new float[1000];
+
+			#ifdef _INFO_
+				cout << "Compute Feature Extraction Using C..." << endl;
+			#endif
+
+			float* KP0 = new float[1000];
+			float* KP1 = new float[1000];
 			cv::Mat Des0(500, 32, CV_8U);
 			cv::Mat Des1(500, 32, CV_8U);
 			extract_features(ImgLeft_0.data, Mask.data, KP0, Des0.data);
 			extract_features(ImgLeft_1.data, Mask.data, KP1, Des1.data);
-			/*
-			fout_KP0.open("KP0_iteration0.txt", ios::out);
-			for (int i = 0; i < 499; i++) {
-				fout_KP0 << KP0[i*2] << " " << KP0[i*2 + 1] << endl;
-			}
-			fout_KP0.close();
 
+			#ifdef _PRINT_
+				string KP0_name = "Output/C_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".txt";
+				string KP1_name = "Output/C_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".txt";
+				string Des0_name = "Output/C_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".txt";
+				string Dea1_name = "Output/C_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".txt";
+				BasicFunction::print_content(KP0_name, KP0, 2, 500);
+				BasicFunction::print_content(KP1_name, KP1, 2, 500);
+				BasicFunction::print_content(Des0_name, &Des0);
+				BasicFunction::print_content(Dea1_name, &Des1);
+			#endif
 			
-			fout_KP1.open("KP1_iteration0.txt", ios::out);
-			for (int i = 0; i < 499; i++) {
-				fout_KP1 << KP1[i*2] << " " << KP1[i*2 + 1] << endl;
-			}
-			fout_KP1.close();
-
-
-			fout_Des0.open("Des0_iteration0.txt", ios::out);
-			fout_Des0 << Des0;
-			fout_Des0.close();
-
-
-
-			fout_Des1.open("Des1_iteration0.txt", ios::out);
-			fout_Des1 << Des1;
-			fout_Des1.close();
-			*/
-
-			/*
-			cout << "KP0: ";
-			for (int i = 0; i < 1000; i++) {
-				cout << KP0[i] << " ";
-			}
-			cout << "\n\n";
-			cout << "KP1: ";
-			for (int i = 0; i < 1000; i++) {
-				cout << KP1[i] << " ";
-			}
-			cout << "\n\n";
-			cout << "Des0: " << "\n";
-			cout << Des0;
-			cout << "\n\n";
-			cout << "Des1: " << "\n";
-			cout << Des1;
-			cout << "\n\n";
-			*/
-
 		#endif
 
 
@@ -508,8 +485,17 @@ int main(int argc, const char** argv) {
 			 * 
 			 */
 		#else
-			float *Matches = new float[1000];
+			#ifdef _INFO_
+				cout << "Compute Feature Tracking Using C..." << endl;
+			#endif
+
+			int *Matches = new int[1000];
 			match_feature(Des0.data, Des1.data, Filter, (int32*)Matches);
+
+			#ifdef _PRINT_
+				string Matches_name = "Output/C_FeatureTracking/Matches_iteration" + std::to_string(i) + ".txt";
+				BasicFunction::print_content(Matches_name, Matches, 2, 500);
+			#endif
 		#endif
 
 
@@ -526,81 +512,92 @@ int main(int argc, const char** argv) {
 			 * 
 			 */
 		#else
+			#ifdef _INFO_
+				cout << "Compute Motion Estimation Using C..." << endl;
+			#endif
 
-			/*
-			cv::Mat rmat(3, 3, CV_8U);
-			cv::Mat tvec(3, 1, CV_8U);
-			EstimateMotion motion;
+			// constructor: Matrix(row, col)
+			// assign value: Matrix.val[row][col] = val;
 
-			Matrix matches, kp0, kp1, kleft, depth, Rmat, Tvec;
-			for (int i = 0; i < 1; i++) {
-				for (int j = 0; j < 1000; j++) {
-					matches.val[i][j] = Matches[i];
-					kp0.val[i][j] = KP0[i];
-					kp1.val[i][j] = KP1[i];
+			cv::Mat rmat(3, 3, CV_32F);
+			cv::Mat tvec(3, 1, CV_32F);
+			EstimateMotion motion = EstimateMotion();
+
+			Matrix Matches_Matrix(500, 2);
+			Matrix KP0_Matrix(500, 2);
+			Matrix KP1_Matrix(500, 2);
+			Matrix K_Left_Matrix(3, 3);
+			Matrix Depth_Matrix(height, width);
+			Matrix rmat_Matrix(3, 3);
+			Matrix tvec_Matrix(3, 1);
+
+			for (int r = 0; r < 500; r++) {
+				for (int c = 0; c < 2; c++) {
+					Matches_Matrix.val[r][c] = Matches[r * 2 + c];
+					KP0_Matrix.val[r][c] = KP0[r * 2 + c];
+					KP1_Matrix.val[r][c] = KP1[r * 2 + c];
+				}
+			}
+			for (int r = 0; r < 3; r++) {
+				for (int c = 0; c < 3; c++) {
+					K_Left_Matrix.val[r][c] = K_Left.at<float>(r, c);
+				}
+			}
+			for (int r = 0; r < height; r++) {
+				for (int c = 0; c < width; c++) {
+					Depth_Matrix.val[r][c] = Depth.at<float>(r, c);
 				}
 			}
 
-			for (int i = 0; i < K_Left.rows; i++) {
-				for (int j = 0;j < K_Left.cols; j++) {
-					kleft.val[i][j] = K_Left.data[i* K_Left.cols + j];
-				}
-			}
 
-			for (int i = 0; i < Depth.rows; i++) {
-				for (int j = 0;j < Depth.cols; j++) {
-					depth.val[i][j] = Depth.data[i * Depth.cols + j];
-				}
-			}
+			motion.estimate(Matches_Matrix, KP0_Matrix, KP1_Matrix, K_Left_Matrix, Depth_Matrix, rmat_Matrix, tvec_Matrix);
 
-			motion.estimate(matches, kp0, kp1, kleft, depth, Rmat, Tvec);
-
-			for (int i = 0; i < 3; i++) {
-				for (int j = 0; j < 3; j++) {
-					rmat.data[i*3 + j] = Rmat.val[i][j];
+			for (int r = 0; r < 3; r++) {
+				for (int c = 0; c < 3; c++) {
+					rmat.at<float>(r, c) = rmat_Matrix.val[r][c];
 				}
-				tvec.data[i] = Tvec.val[i][0];
+				tvec.at<float>(r) = tvec_Matrix.val[r][0];
 			}
-			*/
+			
+
+			#ifdef _PRINT_
+				string rmat_name = "Output/C_MotionEstimation/rmat_iteration" + std::to_string(i) + ".txt";
+				string tvec_name = "Output/C_MotionEstimation/tvec_iteration" + std::to_string(i) + ".txt";
+				BasicFunction::print_content(rmat_name, &rmat);
+				BasicFunction::print_content(tvec_name, &tvec);
+			#endif
+	
 		#endif
 		
-
-		/*
 		cv::Mat T_mat;
-		cv::Mat I4 = cv::Mat::eye(4, 4, CV_64F);
+		cv::Mat I4 = cv::Mat::eye(4, 4, CV_32F);
 		cv::hconcat(rmat, tvec, T_mat);
 		cv::vconcat(T_mat, I4.row(3), T_mat);
 		T_tot = T_tot * T_mat.inv();
 		T_tot(rect).copyTo(trajectory[i+1]);
-		*/
 
-/*
-		FILE* fp;
-		fopen_s(&fp, "../output/trajectory.txt", "w");
-
-		for (int i = 0; i < trajectory.size(); i++)
-		{
-			fprintf_s(fp, "%lf\t%lf\t%lf\n", 
-				trajectory.at(i).at<double>(0, 3), 
-				trajectory.at(i).at<double>(1, 3), 
-				trajectory.at(i).at<double>(2, 3));
-		}
-
-		fclose(fp);
-
-
-		Depth.release();
-		Des0.release();
-		Des1.release();
-		//rmat.release();
-		//tvec.release();
+		//ImgLeft_0.deallocate();
+		//ImgRight_0.deallocate();
+		//ImgLeft_1.deallocate();
+		Depth.deallocate();
+		Des0.deallocate();
+		Des1.deallocate();
+		rmat.deallocate();
+		tvec.deallocate();
 		delete []KP0;
 		delete []KP1;
 		delete []Matches;
-	*/
+	
 	}
 
-
+	ofstream fout;
+	fout.open("Output/trajectory.txt", ios::out);
+	for (int idx = 0; idx < FRAME_NUM - 1; idx++) {
+		fout << trajectory.at(idx).at<float>(0, 3) << "\t"
+			<< trajectory.at(idx).at<float>(1, 3) << "\t"
+			<< trajectory.at(idx).at<float>(2, 3) << endl;
+	}
+	fout.close();
 
 /**
  * // Submit Kernels for Execution
@@ -631,3 +628,4 @@ int main(int argc, const char** argv) {
 
 }
 
+ 

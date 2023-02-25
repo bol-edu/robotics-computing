@@ -1,6 +1,6 @@
 #include "EPnP.h"
 
-EPnP::EPnP(Matrix opoint, Matrix ipoint, FLOAT _fx, FLOAT _fy, FLOAT _cx, FLOAT _cy)
+EPnP::EPnP(Matrix opoint, Matrix ipoint, FLOAT_t _fx, FLOAT_t _fy, FLOAT_t _cx, FLOAT_t _cy)
 {
     number_of_correspondences = opoint.m;
 
@@ -285,8 +285,8 @@ void EPnP::compute(Matrix &rmat, Matrix &tvec)
     }
 }
 
-FLOAT EPnP::compute_R_and_t(const Matrix &u, const FLOAT *betas,
-                            Matrix &R, FLOAT t[3])
+FLOAT_t EPnP::compute_R_and_t(const Matrix &u, const FLOAT_t *betas,
+                            Matrix &R, FLOAT_t t[3])
 {
     Matrix ccs = Matrix(4, 3);
     pcs = Matrix(number_of_correspondences, 3);
@@ -366,7 +366,7 @@ FLOAT EPnP::compute_R_and_t(const Matrix &u, const FLOAT *betas,
             R.val[i][j] = Matrix::dot(ABt_U.val[i], ABt_V.val[j]);
         }
 
-    const FLOAT det =
+    const FLOAT_t det =
         R.val[0][0] * R.val[1][1] * R.val[2][2] +
         R.val[0][1] * R.val[1][2] * R.val[2][0] +
         R.val[0][2] * R.val[1][0] * R.val[2][1] -
@@ -381,9 +381,9 @@ FLOAT EPnP::compute_R_and_t(const Matrix &u, const FLOAT *betas,
         R.val[2][2] = -R.val[2][2];
     }
 
-    t[0] = pc0[0] - Matrix::dot(R.val[0], (float*)pw0);
-    t[1] = pc0[1] - Matrix::dot(R.val[1], (float*)pw0);
-    t[2] = pc0[2] - Matrix::dot(R.val[2], (float*)pw0);
+    t[0] = pc0[0] - Matrix::dot(R.val[0], pw0);
+    t[1] = pc0[1] - Matrix::dot(R.val[1], pw0);
+    t[2] = pc0[2] - Matrix::dot(R.val[2], pw0);
 
     double sum2 = 0.0;
 
@@ -401,7 +401,7 @@ FLOAT EPnP::compute_R_and_t(const Matrix &u, const FLOAT *betas,
     return sum2 / number_of_correspondences;
 }
 
-void EPnP::gauss_newton(const Matrix &L_6x10, const Matrix &Rho, FLOAT betas[4])
+void EPnP::gauss_newton(const Matrix &L_6x10, const Matrix &Rho, FLOAT_t betas[4])
 {
     const int32_t iterations_number = 5;
 

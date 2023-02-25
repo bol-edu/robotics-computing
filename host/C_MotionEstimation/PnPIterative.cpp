@@ -4,9 +4,9 @@
 #define DBL_MAX 1.7976931348623158e+308
 #define DBL_MIN 2.2250738585072014e-308
 
-FLOAT NORM(Matrix a)
+FLOAT_t NORM(Matrix a)
 {
-    FLOAT b = 0.0;
+    FLOAT_t b = 0.0;
     for (int i = 0; i < a.m; i++)
         for (int j = 0; j < a.n; j++)
             b += a.val[i][j] * a.val[i][j];
@@ -17,17 +17,17 @@ Matrix Rodrigues(Matrix &src, bool is_rvec)
 {
     if (!is_rvec)
     {
-        FLOAT rx = src.val[2][1] - src.val[1][2];
-        FLOAT ry = src.val[0][2] - src.val[2][0];
-        FLOAT rz = src.val[1][0] - src.val[0][1];
+        FLOAT_t rx = src.val[2][1] - src.val[1][2];
+        FLOAT_t ry = src.val[0][2] - src.val[2][0];
+        FLOAT_t rz = src.val[1][0] - src.val[0][1];
 
-        FLOAT s = sqrt((rx * rx + ry * ry + rz * rz) * 0.25);
-        FLOAT c = (src.val[0][0] + src.val[1][1] + src.val[2][2] - 1) * 0.5;
+        FLOAT_t s = sqrt((rx * rx + ry * ry + rz * rz) * 0.25);
+        FLOAT_t c = (src.val[0][0] + src.val[1][1] + src.val[2][2] - 1) * 0.5;
         c = c > 1. ? 1. : c < -1. ? -1.
                                   : c;
-        FLOAT theta = acos(c);
+        FLOAT_t theta = acos(c);
 
-        FLOAT vth = 1 / (2 * s);
+        FLOAT_t vth = 1 / (2 * s);
 
         vth *= theta;
 
@@ -39,15 +39,15 @@ Matrix Rodrigues(Matrix &src, bool is_rvec)
     }
     else
     {
-        FLOAT rx = src.val[0][0];
-        FLOAT ry = src.val[1][0];
-        FLOAT rz = src.val[2][0];
+        FLOAT_t rx = src.val[0][0];
+        FLOAT_t ry = src.val[1][0];
+        FLOAT_t rz = src.val[2][0];
 
-        FLOAT theta = sqrt(rx * rx + ry * ry + rz * rz);
-        FLOAT c = cos(theta);
-        FLOAT s = sin(theta);
-        FLOAT c1 = 1 - c;
-        FLOAT itheta = theta ? 1. / theta : 0.;
+        FLOAT_t theta = sqrt(rx * rx + ry * ry + rz * rz);
+        FLOAT_t c = cos(theta);
+        FLOAT_t s = sin(theta);
+        FLOAT_t c1 = 1 - c;
+        FLOAT_t itheta = theta ? 1. / theta : 0.;
 
         rx *= itheta;
         ry *= itheta;
@@ -69,15 +69,15 @@ Matrix Rodrigues(Matrix &src, bool is_rvec)
 
 Matrix Rodrigues(Matrix &src, Matrix &jacob)
 {
-    FLOAT rx = src.val[0][0];
-    FLOAT ry = src.val[1][0];
-    FLOAT rz = src.val[2][0];
+    FLOAT_t rx = src.val[0][0];
+    FLOAT_t ry = src.val[1][0];
+    FLOAT_t rz = src.val[2][0];
 
-    FLOAT theta = sqrt(rx * rx + ry * ry + rz * rz);
-    FLOAT c = cos(theta);
-    FLOAT s = sin(theta);
-    FLOAT c1 = 1 - c;
-    FLOAT itheta = theta ? 1. / theta : 0.;
+    FLOAT_t theta = sqrt(rx * rx + ry * ry + rz * rz);
+    FLOAT_t c = cos(theta);
+    FLOAT_t s = sin(theta);
+    FLOAT_t c1 = 1 - c;
+    FLOAT_t itheta = theta ? 1. / theta : 0.;
 
     rx *= itheta;
     ry *= itheta;
@@ -94,22 +94,22 @@ Matrix Rodrigues(Matrix &src, Matrix &jacob)
 
     Matrix dst = Matrix::eye(3) * c + rrt * c1 + r_x * s;
 
-    const FLOAT I[] = {1, 0, 0,
+    const FLOAT_t I[] = {1, 0, 0,
                        0, 1, 0,
                        0, 0, 1};
-    FLOAT drrt[] = {rx + rx, ry, rz, ry, 0, 0, rz, 0, 0,
+    FLOAT_t drrt[] = {rx + rx, ry, rz, ry, 0, 0, rz, 0, 0,
                     0, rx, 0, rx, ry + ry, rz, 0, rz, 0,
                     0, 0, rx, 0, 0, ry, rx, ry, rz + rz};
-    FLOAT d_r_x_[] = {0, 0, 0, 0, 0, -1, 0, 1, 0,
+    FLOAT_t d_r_x_[] = {0, 0, 0, 0, 0, -1, 0, 1, 0,
                       0, 0, 1, 0, 0, 0, -1, 0, 0,
                       0, -1, 0, 1, 0, 0, 0, 0, 0};
     jacob = Matrix(3, 9);
     for (int i = 0; i < 3; i++)
     {
-        FLOAT ri = i == 0 ? rx : i == 1 ? ry
+        FLOAT_t ri = i == 0 ? rx : i == 1 ? ry
                                         : rz;
-        FLOAT a0 = -s * ri, a1 = (s - 2 * c1 * itheta) * ri, a2 = c1 * itheta;
-        FLOAT a3 = (c - s * itheta) * ri, a4 = s * itheta;
+        FLOAT_t a0 = -s * ri, a1 = (s - 2 * c1 * itheta) * ri, a2 = c1 * itheta;
+        FLOAT_t a3 = (c - s * itheta) * ri, a4 = s * itheta;
         for (int k = 0; k < 9; k++)
             jacob.val[i][k] = a0 * I[k] + a1 * rrt.val[k / 3][k % 3] + a2 * drrt[i * 9 + k] +
                               a3 * r_x.val[k / 3][k % 3] + a4 * d_r_x_[i * 9 + k];
@@ -118,7 +118,7 @@ Matrix Rodrigues(Matrix &src, Matrix &jacob)
 }
 
 void ProjectPoints(Matrix &objectPoints, Matrix &r_vec, Matrix &t_vec,
-                   FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy, Matrix &imagePoints)
+                   FLOAT_t fx, FLOAT_t fy, FLOAT_t cx, FLOAT_t cy, Matrix &imagePoints)
 {
     int32_t count = objectPoints.m;
 
@@ -127,10 +127,10 @@ void ProjectPoints(Matrix &objectPoints, Matrix &r_vec, Matrix &t_vec,
     imagePoints = Matrix(count, 2);
     for (int32_t i = 0; i < count; i++)
     {
-        FLOAT X = objectPoints.val[i][0], Y = objectPoints.val[i][1], Z = objectPoints.val[i][2];
-        FLOAT x = R.val[0][0] * X + R.val[0][1] * Y + R.val[0][2] * Z + t_vec.val[0][0];
-        FLOAT y = R.val[1][0] * X + R.val[1][1] * Y + R.val[1][2] * Z + t_vec.val[1][0];
-        FLOAT z = R.val[2][0] * X + R.val[2][1] * Y + R.val[2][2] * Z + t_vec.val[2][0];
+        FLOAT_t X = objectPoints.val[i][0], Y = objectPoints.val[i][1], Z = objectPoints.val[i][2];
+        FLOAT_t x = R.val[0][0] * X + R.val[0][1] * Y + R.val[0][2] * Z + t_vec.val[0][0];
+        FLOAT_t y = R.val[1][0] * X + R.val[1][1] * Y + R.val[1][2] * Z + t_vec.val[1][0];
+        FLOAT_t z = R.val[2][0] * X + R.val[2][1] * Y + R.val[2][2] * Z + t_vec.val[2][0];
         z = z ? 1. / z : 1;
         x *= z;
         y *= z;
@@ -141,7 +141,7 @@ void ProjectPoints(Matrix &objectPoints, Matrix &r_vec, Matrix &t_vec,
 }
 
 void ProjectPoints(Matrix &objectPoints, Matrix &r_vec, Matrix &t_vec,
-                   FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy,
+                   FLOAT_t fx, FLOAT_t fy, FLOAT_t cx, FLOAT_t cy,
                    Matrix &imagePoints, Matrix &dpdr, Matrix &dpdt)
 {
     int32_t count = objectPoints.m;
@@ -152,10 +152,10 @@ void ProjectPoints(Matrix &objectPoints, Matrix &r_vec, Matrix &t_vec,
     imagePoints = Matrix(count, 2);
     for (int32_t i = 0; i < count; i++)
     {
-        FLOAT X = objectPoints.val[i][0], Y = objectPoints.val[i][1], Z = objectPoints.val[i][2];
-        FLOAT x = R.val[0][0] * X + R.val[0][1] * Y + R.val[0][2] * Z + t_vec.val[0][0];
-        FLOAT y = R.val[1][0] * X + R.val[1][1] * Y + R.val[1][2] * Z + t_vec.val[1][0];
-        FLOAT z = R.val[2][0] * X + R.val[2][1] * Y + R.val[2][2] * Z + t_vec.val[2][0];
+        FLOAT_t X = objectPoints.val[i][0], Y = objectPoints.val[i][1], Z = objectPoints.val[i][2];
+        FLOAT_t x = R.val[0][0] * X + R.val[0][1] * Y + R.val[0][2] * Z + t_vec.val[0][0];
+        FLOAT_t y = R.val[1][0] * X + R.val[1][1] * Y + R.val[1][2] * Z + t_vec.val[1][0];
+        FLOAT_t z = R.val[2][0] * X + R.val[2][1] * Y + R.val[2][2] * Z + t_vec.val[2][0];
         z = z ? 1. / z : 1;
         x *= z;
         y *= z;
@@ -163,24 +163,24 @@ void ProjectPoints(Matrix &objectPoints, Matrix &r_vec, Matrix &t_vec,
         imagePoints.val[i][0] = x * fx + cx;
         imagePoints.val[i][1] = y * fy + cy;
 
-        FLOAT dxdt[] = {z, 0, -x * z}, dydt[] = {0, z, -y * z};
+        FLOAT_t dxdt[] = {z, 0, -x * z}, dydt[] = {0, z, -y * z};
         for (int32_t j = 0; j < 3; j++)
         {
             dpdt.val[2 * i][j] = fx * dxdt[j];
             dpdt.val[2 * i + 1][j] = fy * dydt[j];
         }
 
-        FLOAT dx0dr[] =
+        FLOAT_t dx0dr[] =
             {
                 X * dRdr.val[0][0] + Y * dRdr.val[0][1] + Z * dRdr.val[0][2],
                 X * dRdr.val[1][0] + Y * dRdr.val[1][1] + Z * dRdr.val[1][2],
                 X * dRdr.val[2][0] + Y * dRdr.val[2][1] + Z * dRdr.val[2][2]};
-        FLOAT dy0dr[] =
+        FLOAT_t dy0dr[] =
             {
                 X * dRdr.val[0][3] + Y * dRdr.val[0][4] + Z * dRdr.val[0][5],
                 X * dRdr.val[1][3] + Y * dRdr.val[1][4] + Z * dRdr.val[1][5],
                 X * dRdr.val[2][3] + Y * dRdr.val[2][4] + Z * dRdr.val[2][5]};
-        FLOAT dz0dr[] =
+        FLOAT_t dz0dr[] =
             {
                 X * dRdr.val[0][6] + Y * dRdr.val[0][7] + Z * dRdr.val[0][8],
                 X * dRdr.val[1][6] + Y * dRdr.val[1][7] + Z * dRdr.val[1][8],
@@ -195,7 +195,7 @@ void ProjectPoints(Matrix &objectPoints, Matrix &r_vec, Matrix &t_vec,
     }
 }
 
-PnPIterative::PnPIterative(Matrix &opoints, Matrix &ipoints, FLOAT _fx, FLOAT _fy, FLOAT _cx, FLOAT _cy)
+PnPIterative::PnPIterative(Matrix &opoints, Matrix &ipoints, FLOAT_t _fx, FLOAT_t _fy, FLOAT_t _cx, FLOAT_t _cy)
 {
     number_of_points = opoints.m;
     matM = Matrix(number_of_points, 3);
@@ -220,7 +220,7 @@ void PnPIterative::compute(Matrix &rmat, Matrix &tvec)
     Matrix mn = Matrix(number_of_points, 2);
     for (int32_t i = 0; i < number_of_points; i++)
     {
-        FLOAT x, y;
+        FLOAT_t x, y;
         x = _m.val[i][0];
         y = _m.val[i][1];
 
@@ -235,7 +235,7 @@ void PnPIterative::compute(Matrix &rmat, Matrix &tvec)
     Matrix matL = Matrix(2 * number_of_points, 12);
     for (int32_t i = 0; i < number_of_points; i++)
     {
-        FLOAT x = -mn.val[i][0], y = -mn.val[i][1];
+        FLOAT_t x = -mn.val[i][0], y = -mn.val[i][1];
         matL.val[2 * i][0] = matL.val[2 * i + 1][4] = matM.val[i][0];
         matL.val[2 * i][1] = matL.val[2 * i + 1][5] = matM.val[i][1];
         matL.val[2 * i][2] = matL.val[2 * i + 1][6] = matM.val[i][2];
@@ -273,7 +273,7 @@ void PnPIterative::compute(Matrix &rmat, Matrix &tvec)
     tt.val[1][0] = LV.val[7][11];
     tt.val[2][0] = LV.val[11][11];
 
-    FLOAT det =
+    FLOAT_t det =
         RR.val[0][0] * RR.val[1][1] * RR.val[2][2] +
         RR.val[0][1] * RR.val[1][2] * RR.val[2][0] +
         RR.val[0][2] * RR.val[1][0] * RR.val[2][1] -
@@ -286,7 +286,7 @@ void PnPIterative::compute(Matrix &rmat, Matrix &tvec)
         tt = tt * (-1.);
     }
 
-    FLOAT sc = NORM(RR);
+    FLOAT_t sc = NORM(RR);
     Matrix matW, matU, matV;
     RR.svd(matU, matW, matV);
     Matrix matR = matU * matV.trans();
@@ -442,8 +442,8 @@ bool LevMarq::update(Matrix &_param, Matrix &matJ, Matrix &_err)
 
 void LevMarq::step()
 {
-    const FLOAT LOG10 = log(10.);
-    FLOAT lambda = exp(lambdaLg10 * LOG10);
+    const FLOAT_t LOG10 = log(10.);
+    FLOAT_t lambda = exp(lambdaLg10 * LOG10);
     int nparams = param.m;
 
     JtJN = JtJ;

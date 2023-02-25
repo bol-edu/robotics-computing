@@ -1535,7 +1535,6 @@ void detect_fast(Mat& _image, std::vector<KeyPoint>& keypoints, Mat mask)
 
     if (_image.empty())
     {
-        cout << "in detect_fast: _image is empty " << endl;
         keypoints.clear();
         return;
     }
@@ -1740,8 +1739,6 @@ void detectAndCompute(Mat image, Mat mask,
     bool do_keypoints = !useProvidedKeypoints;
     bool do_descriptors = descriptors.dims == 0 ? false : true;
 
-    //cout << "do_keypoints: " << do_keypoints << endl;
-    //cout << "do_descriptors: " << do_descriptors << endl;
 
     if ((!do_keypoints && !do_descriptors) || image.empty())
         return;
@@ -1814,7 +1811,6 @@ void detectAndCompute(Mat image, Mat mask,
 
     }
     bufSize.height = level_ofs.y + level_dy;
-    //cout << "bufSize: " << bufSize.height << " " << bufSize.width << endl;
 
     imagePyramid.create();
 
@@ -2008,7 +2004,6 @@ void detectAndCompute(Mat image, Mat mask,
 
         }
 
-//cout<<"out"<<endl;
 
         //Mat descriptors = _descriptors.getMat();
         computeOrbDescriptors(imagePyramid, layerInfo, layerScale,
@@ -2050,9 +2045,7 @@ void compute(Mat image,
         return;
     }
     Mat noArray;
-    //cout << "descriptors: " << descriptors.dims << endl;
     descriptors.dims = 2;
-    //cout << "descriptors: " << descriptors.dims << endl;
 
     detectAndCompute(image, noArray, keypoints, descriptors, true);
 }
@@ -2092,9 +2085,7 @@ void extract_features(unsigned char* image_data, unsigned char* mask_data, float
 
 
 	detect(image, kp, mask);
-    //cout << "detect end" << endl;
 	compute(image, kp, des);
-    //cout << "compute end" << endl;
 
     for(int o = 0; o < 500 * 32; o++)
             des_data[o] = des.data[o];
@@ -2104,8 +2095,6 @@ void extract_features(unsigned char* image_data, unsigned char* mask_data, float
         kp_xy[v * 2] = kp.at(v).pt.x;
         kp_xy[v * 2 + 1] = kp.at(v).pt.y;
     }
-
-    //cout<<"des: "<<static_cast<int>(des_data[0])<<endl;
 
 	//cout << "extract_features" << endl;
 

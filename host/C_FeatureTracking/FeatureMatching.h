@@ -4,7 +4,7 @@ typedef unsigned char uchar;
 typedef float FLOAT;
 
 #define MAX_KEYPOINT_NUM 500
-#define DESCRIPTOR_COL 128
+#define DESCRIPTOR_COL 32
 #define K 2
 
 struct DMatch
@@ -40,4 +40,4 @@ void batchDistHamming2(const uchar src1[DESCRIPTOR_COL],
 					   const uchar src2[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
 					   int dist[MAX_KEYPOINT_NUM]);
 
-int normHamming(const uchar a[DESCRIPTOR_COL], const uchar b[32]);
+int normHamming(const uchar a[DESCRIPTOR_COL], const uchar b[DESCRIPTOR_COL]);

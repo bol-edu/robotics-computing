@@ -15,14 +15,16 @@
  * `_ONLY_K_MotionEstimation_`
  * `_ALL_KERNELS_`
  * 
- * 1 message modes
+ * 2 message modes
  * `_INFO_`
+ * `_VERI_`
  * 
  * The default compile mode is `_ALL_KERNELS_` + `_INFO_`
  */
 
 #define _PURE_C_
 #define _INFO_
+//#define _PRINT_
 
 
 #ifdef _ALL_KERNELS_

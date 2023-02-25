@@ -9,13 +9,13 @@ private:
     int32_t max_depth;
     int32_t model_points;
     uint64_t RNG_state;
-    FLOAT confidence;
-    FLOAT threshold;
+    FLOAT_t confidence;
+    FLOAT_t threshold;
     int32_t maxIter;
-    FLOAT cx;
-    FLOAT cy;
-    FLOAT fx;
-    FLOAT fy;
+    FLOAT_t cx;
+    FLOAT_t cy;
+    FLOAT_t fx;
+    FLOAT_t fy;
 
     void RANSAC_EPnP(Matrix opoint, Matrix ipoint, Matrix &_rmat, Matrix &_tvec);
     void getSubset(Matrix opoint, Matrix ipoint, Matrix &subopoint, Matrix &subipoint);

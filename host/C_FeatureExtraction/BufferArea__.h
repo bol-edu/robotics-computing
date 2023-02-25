@@ -212,14 +212,14 @@ static inline const char* envRead(const char* name)
     return NULL;
 #else
     cout << "UUUUUUUsing getenv";
-    char s[2] = "s";
+    char* s;
     //s = getenv(name);
     size_t len;
     //int err = _dupenv_s(&s, &len, name);
     //if (err) exit(-1);
 
     //return getenv(name);
-    return s;
+    return name;
 #endif
 }
 class ParseError

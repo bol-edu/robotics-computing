@@ -71,9 +71,6 @@ cl::Device get_specific_device(const std::string& Target_Device_Name, const std:
 }
 
 
-
-
-
 // Need to build Linux version of read_image_folder
 std::vector<std::string> read_image_folder(const int FRAME_NUM, const std::string& folder_path){
     std::vector<std::string> images;
@@ -135,6 +132,13 @@ void read_calibration(const std::string& file_path, cv::Mat* P0, cv::Mat* P1){
 
 	fclose(fp);
 }
+void print_content(const std::string& Path_and_Name, cv::Mat* Matrix) {
+    std::ofstream fout;
+    fout.open(Path_and_Name.c_str(), std::ios::out);
+    fout << *Matrix;
+    fout.close();
+}
+
 
 
 /*

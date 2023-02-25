@@ -38,6 +38,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <CL/opencl.hpp> //"/opt/intel/opencl-1.2-4.4.0.117/include/CL/cl.h"
 #include <opencv2/opencv.hpp>
+#include <vector>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -105,6 +106,31 @@ char* read_binary_file(const std::string& xclbin_file_name, unsigned& nb);
 std::vector<std::string> read_image_folder(const int FRAME_NUM, const std::string& folder_path);
 void read_calibration(const std::string& file_path, cv::Mat* P0, cv::Mat* P1);
 
+void print_content(const std::string& Path_and_Name, cv::Mat* Matrix);
+
+// Template function must be writen at .h
+template <typename T>
+void print_content(const std::string& Path_and_Name, T* arr, int col, int row) {
+    std::ofstream fout;
+    fout.open(Path_and_Name.c_str(), std::ios::out);
+    for (int i = 0; i < row; i++) {
+        if (i == 0) fout << "[";
+        else fout << " ";
+
+        for (int j = 0; j < col; j++) {
+            fout.width(7);
+            fout.setf(std::ios::right);
+            fout << arr[i * col + j];
+            if (j < col - 1) fout << ", ";
+            else if (i < row - 1) fout << ";";
+        }
+
+        if (i < row - 1) fout << std::endl;
+        else  fout << "]";
+    }
+    fout.close();
+
+}
 
 bool is_emulation();
 bool is_hw_emulation();

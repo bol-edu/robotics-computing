@@ -5,17 +5,17 @@
 class PnPIterative
 {
 public:
-    PnPIterative(Matrix &opoints, Matrix &ipoints, FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy);
+    PnPIterative(Matrix &opoints, Matrix &ipoints, FLOAT_t fx, FLOAT_t fy, FLOAT_t cx, FLOAT_t cy);
     void compute(Matrix &rmat, Matrix &tvec);
 
 private:
     int32_t number_of_points;
     Matrix _m;
     Matrix matM;
-    FLOAT cx;
-    FLOAT cy;
-    FLOAT fx;
-    FLOAT fy;
+    FLOAT_t cx;
+    FLOAT_t cy;
+    FLOAT_t fx;
+    FLOAT_t fy;
 };
 
 class LevMarq
@@ -45,8 +45,8 @@ public:
     Matrix JtErr;
     Matrix JtJV;
     Matrix JtJW;
-    FLOAT prevErrNorm, errNorm;
-    FLOAT epsilon;
+    FLOAT_t prevErrNorm, errNorm;
+    FLOAT_t epsilon;
     int32_t lambdaLg10;
     int32_t max_iter;
     int32_t state;
