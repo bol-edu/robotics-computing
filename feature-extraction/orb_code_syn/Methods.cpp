@@ -3122,7 +3122,7 @@ void extract_features(unsigned char* image_data, unsigned char* mask_data, float
 
 	detect(image, kp, mask, kpSize, imgP);
     cout << "detect end" << endl;
-	//compute(imgP, kp, des_data, kpSize );
+	compute(imgP, kp, des_data, kpSize );
     cout << "compute end" << endl;
 
    //for(int o = 0; o < 500 * 32; o++)
