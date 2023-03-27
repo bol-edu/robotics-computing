@@ -22,7 +22,7 @@ To set up the Vitis Vision Library Build (for U50), please follow this [guide](h
 1. Create an empty application project using `xilinx_u50` as the platform.
 2. Import the host code to the `src` folder under `<ProjectName>[x86]` and kernel code to the `src` folder under `<ProjectName>_kernels` in the Explorer panel.
 3. Add kernel functions in the `<ProjectName>_kernels.prj` project editor.
-4. Right-click `<ProjectName>`.prj` and select **Properties**.
+4. Right-click `<ProjectName>.prj` and select **Properties**.
    Add the following includes and libraries in the **Properties**:
 
    * **C/C++ Build > Settings > Tool Setting > GCC Host Compiler(x86_64) > Includes**
