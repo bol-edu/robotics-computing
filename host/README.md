@@ -96,3 +96,5 @@ You can modify the behavior of the host program in `Parameters.hpp`. There are 3
       |   |- poses
       \   \- sequences 
    ```
+   
+   Or you can download and unzip `output.zip`, it has the same directory structure.
