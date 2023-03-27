@@ -9,13 +9,13 @@ This host code is written in C/C++ and utilizes OpenCV and OpenCL C++ Wrapper. I
 ![image](https://user-images.githubusercontent.com/85032763/227933821-b6e32927-c918-4c42-a64b-2f38c047cbb5.png)
 
 Please refer to the [Host Interface](https://hackmd.io/jeLJ6ZYyQmuwtZx6spOqRA) for more information.
-`</br></br>`
+</br></br>
 
 ## Setup Environment
 
 To set up the Vitis Vision Library Build (for U50), please follow this [guide](https://hackmd.io/3VZbNXG4T2CFOSbVs57WFQ).
 
-`</br></br>`
+</br></br>
 
 ## Setup Vitis
 
@@ -32,24 +32,31 @@ To set up the Vitis Vision Library Build (for U50), please follow this [guide](h
      Add the path ``<path-to-opencv-lib-folder>`` to **Library search path(-L)**.
 
      Add the following libraries:
+     
      ``opencv_videoio`` ``opencv_imgcodecs`` ``opencv_core`` ``opencv_imgproc`` ``opencv_features2d`` ``opencv_flann`` ``opencv_video`` ``opencv_calib3d`` ``opencv_highgui``
+     
      to **Libraries(-l)**.
 5. Click the **Run** button (green button at the top panel) to add configurations
 
    * Double-click **System Project Debug** and click the generated **SystemDebugger**
    * Edit **Program Arguments** and provide arguments as below:
-     ``<path-to-leftimage-folder>`` ``<path-to-rightimage-folder>`` ``<path-to-calib-file>`` ``<number-of-frames>`` ``<platform-vendor>`` ``<device-name>``.
+   
+     ```
+     <path-to-leftimage-folder> <path-to-rightimage-folder> <path-to-calib-file> <number-of-frames> <platform-vendor> <device-name>
+     ```
+     
      Enable **Automatically add binary container(s) to aruments**
    * Edit **Configuration** and enable **OpenCL trace**
 
    **Note:** If you run the pure C code, please delete ``<platform-vendor>`` ``<device-name>`` arguments, and disable **Automatically add binary container(s) to aruments**
-   `</br></br>`
+   </br></br>
 
 ## Setup Host Program Behavier
 
 You can modify the behavior of the host program in `Parameters.hpp`. There are 3 sections that you can modify:
 
 1. Include Section
+
    In this section, you need to ensure that the header file of the pure C code is correct.
 2. Macro Section
 
@@ -57,6 +64,7 @@ You can modify the behavior of the host program in `Parameters.hpp`. There are 3
    * You can print the program's progress on terminal with ``_INFO_``
    * You can write the output of the function to a .txt file with ``_PRINT_``
 3. Parameter Section
+
    In this section, you need to verify that the name of the main function in your kernel is correct. Additionally, you are required to specify the path to the output folder on your computer while following the directory structure outlined below:
 
    ```
