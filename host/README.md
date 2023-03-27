@@ -43,9 +43,12 @@ To set up the Vitis Vision Library Build (for U50), please follow this [guide](h
    
      ```
      <path-to-leftimage-folder> <path-to-rightimage-folder> <path-to-calib-file> <number-of-frames> <platform-vendor> <device-name>
+     
+     e.g. 
+     /home/chngh/Desktop/Host/dataset/sequences/00/image_0/ /home/chngh/Desktop/Host/dataset/sequences/00/image_1/ /home/chngh/Desktop/Host/dataset/sequences/00/calib.txt 12 Xilinx xilinx_u50_gen3x16_xdma_5_202210_1
      ```
      
-     Enable **Automatically add binary container(s) to aruments**
+     Enable **Automatically add binary container(s) to arguments**
    * Edit **Configuration** and enable **OpenCL trace**
 
    **Note:** If you run the pure C code, please delete ``<platform-vendor>`` ``<device-name>`` arguments, and disable **Automatically add binary container(s) to aruments**
