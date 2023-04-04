@@ -1,0 +1,170 @@
+
+
+================================================================
+== Vitis HLS Report for 'compute_R_and_t_Pipeline_1'
+================================================================
+* Date:           Tue Apr  4 19:45:53 2023
+
+* Version:        2022.1 (Build 3526262 on Mon Apr 18 15:47:01 MDT 2022)
+* Project:        hls_EstimateMotion
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcu50-fsvh2104-2L-e
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  60.00 ns|  2.102 ns|    16.20 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+---------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline|
+    |   min   |   max   |    min   |    max   | min | max |   Type  |
+    +---------+---------+----------+----------+-----+-----+---------+
+    |       14|       14|  0.840 us|  0.840 us|   14|   14|       no|
+    +---------+---------+----------+----------+-----+-----+---------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+        |          |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        | Loop Name|   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+        |- Loop 1  |       12|       12|         1|          1|          1|    12|       yes|
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+--------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT  | URAM|
++---------------------+---------+------+---------+--------+-----+
+|DSP                  |        -|     -|        -|       -|    -|
+|Expression           |        -|     -|        0|      62|    -|
+|FIFO                 |        -|     -|        -|       -|    -|
+|Instance             |        -|     -|        -|       -|    -|
+|Memory               |        -|     -|        -|       -|    -|
+|Multiplexer          |        -|     -|        -|      63|    -|
+|Register             |        -|     -|       19|       -|    -|
++---------------------+---------+------+---------+--------+-----+
+|Total                |        0|     0|       19|     125|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available SLR        |     1344|  2976|   871680|  435840|  320|
++---------------------+---------+------+---------+--------+-----+
+|Utilization SLR (%)  |        0|     0|       ~0|      ~0|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available            |     2688|  5952|  1743360|  871680|  640|
++---------------------+---------+------+---------+--------+-----+
+|Utilization (%)      |        0|     0|       ~0|      ~0|    0|
++---------------------+---------+------+---------+--------+-----+
+
++ Detail: 
+    * Instance: 
+    N/A
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +-------------------------+----------+----+---+----+------------+------------+
+    |      Variable Name      | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +-------------------------+----------+----+---+----+------------+------------+
+    |empty_439_fu_234_p2      |         +|   0|  0|  12|           4|           1|
+    |next_mul_fu_246_p2       |         +|   0|  0|  16|           9|           5|
+    |next_urem_fu_329_p2      |         +|   0|  0|  12|           4|           1|
+    |empty_440_fu_335_p2      |      icmp|   0|  0|   9|           4|           2|
+    |exitcond17218_fu_228_p2  |      icmp|   0|  0|   9|           4|           4|
+    |idx_urem_fu_341_p3       |    select|   0|  0|   4|           1|           4|
+    +-------------------------+----------+----+---+----+------------+------------+
+    |Total                    |          |   0|  0|  62|          26|          17|
+    +-------------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +----------------------------------+----+-----------+-----+-----------+
+    |               Name               | LUT| Input Size| Bits| Total Bits|
+    +----------------------------------+----+-----------+-----+-----------+
+    |ap_done_int                       |   9|          2|    1|          2|
+    |ap_sig_allocacmp_p_load           |   9|          2|    4|          8|
+    |ap_sig_allocacmp_phi_mul_load     |   9|          2|    9|         18|
+    |ap_sig_allocacmp_phi_urem_load_1  |   9|          2|    4|          8|
+    |empty_fu_74                       |   9|          2|    4|          8|
+    |phi_mul_fu_70                     |   9|          2|    9|         18|
+    |phi_urem_fu_66                    |   9|          2|    4|          8|
+    +----------------------------------+----+-----------+-----+-----------+
+    |Total                             |  63|         14|   35|         70|
+    +----------------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +----------------+---+----+-----+-----------+
+    |      Name      | FF| LUT| Bits| Const Bits|
+    +----------------+---+----+-----+-----------+
+    |ap_CS_fsm       |  1|   0|    1|          0|
+    |ap_done_reg     |  1|   0|    1|          0|
+    |empty_fu_74     |  4|   0|    4|          0|
+    |phi_mul_fu_70   |  9|   0|    9|          0|
+    |phi_urem_fu_66  |  4|   0|    4|          0|
+    +----------------+---+----+-----+-----------+
+    |Total           | 19|   0|   19|          0|
+    +----------------+---+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++----------------------------------------+-----+-----+------------+---------------------------------+--------------+
+|                RTL Ports               | Dir | Bits|  Protocol  |          Source Object          |    C Type    |
++----------------------------------------+-----+-----+------------+---------------------------------+--------------+
+|ap_clk                                  |   in|    1|  ap_ctrl_hs|       compute_R_and_t_Pipeline_1|  return value|
+|ap_rst                                  |   in|    1|  ap_ctrl_hs|       compute_R_and_t_Pipeline_1|  return value|
+|ap_start                                |   in|    1|  ap_ctrl_hs|       compute_R_and_t_Pipeline_1|  return value|
+|ap_done                                 |  out|    1|  ap_ctrl_hs|       compute_R_and_t_Pipeline_1|  return value|
+|ap_idle                                 |  out|    1|  ap_ctrl_hs|       compute_R_and_t_Pipeline_1|  return value|
+|ap_ready                                |  out|    1|  ap_ctrl_hs|       compute_R_and_t_Pipeline_1|  return value|
+|arrayidx1860_3_2_promoted36_out         |  out|   32|      ap_vld|  arrayidx1860_3_2_promoted36_out|       pointer|
+|arrayidx1860_3_2_promoted36_out_ap_vld  |  out|    1|      ap_vld|  arrayidx1860_3_2_promoted36_out|       pointer|
+|arrayidx1860_3_1_promoted33_out         |  out|   32|      ap_vld|  arrayidx1860_3_1_promoted33_out|       pointer|
+|arrayidx1860_3_1_promoted33_out_ap_vld  |  out|    1|      ap_vld|  arrayidx1860_3_1_promoted33_out|       pointer|
+|arrayidx1860_3_promoted30_out           |  out|   32|      ap_vld|    arrayidx1860_3_promoted30_out|       pointer|
+|arrayidx1860_3_promoted30_out_ap_vld    |  out|    1|      ap_vld|    arrayidx1860_3_promoted30_out|       pointer|
+|arrayidx1860_2_2_promoted27_out         |  out|   32|      ap_vld|  arrayidx1860_2_2_promoted27_out|       pointer|
+|arrayidx1860_2_2_promoted27_out_ap_vld  |  out|    1|      ap_vld|  arrayidx1860_2_2_promoted27_out|       pointer|
+|arrayidx1860_2_1_promoted24_out         |  out|   32|      ap_vld|  arrayidx1860_2_1_promoted24_out|       pointer|
+|arrayidx1860_2_1_promoted24_out_ap_vld  |  out|    1|      ap_vld|  arrayidx1860_2_1_promoted24_out|       pointer|
+|arrayidx1860_2_promoted21_out           |  out|   32|      ap_vld|    arrayidx1860_2_promoted21_out|       pointer|
+|arrayidx1860_2_promoted21_out_ap_vld    |  out|    1|      ap_vld|    arrayidx1860_2_promoted21_out|       pointer|
+|arrayidx1860_1_2_promoted18_out         |  out|   32|      ap_vld|  arrayidx1860_1_2_promoted18_out|       pointer|
+|arrayidx1860_1_2_promoted18_out_ap_vld  |  out|    1|      ap_vld|  arrayidx1860_1_2_promoted18_out|       pointer|
+|arrayidx1860_1_1_promoted15_out         |  out|   32|      ap_vld|  arrayidx1860_1_1_promoted15_out|       pointer|
+|arrayidx1860_1_1_promoted15_out_ap_vld  |  out|    1|      ap_vld|  arrayidx1860_1_1_promoted15_out|       pointer|
+|arrayidx1860_1_promoted12_out           |  out|   32|      ap_vld|    arrayidx1860_1_promoted12_out|       pointer|
+|arrayidx1860_1_promoted12_out_ap_vld    |  out|    1|      ap_vld|    arrayidx1860_1_promoted12_out|       pointer|
+|arrayidx1860_291_promoted7_out          |  out|   32|      ap_vld|   arrayidx1860_291_promoted7_out|       pointer|
+|arrayidx1860_291_promoted7_out_ap_vld   |  out|    1|      ap_vld|   arrayidx1860_291_promoted7_out|       pointer|
+|arrayidx1860_186_promoted4_out          |  out|   32|      ap_vld|   arrayidx1860_186_promoted4_out|       pointer|
+|arrayidx1860_186_promoted4_out_ap_vld   |  out|    1|      ap_vld|   arrayidx1860_186_promoted4_out|       pointer|
+|arrayidx1860_promoted1_out              |  out|   32|      ap_vld|       arrayidx1860_promoted1_out|       pointer|
+|arrayidx1860_promoted1_out_ap_vld       |  out|    1|      ap_vld|       arrayidx1860_promoted1_out|       pointer|
++----------------------------------------+-----+-----+------------+---------------------------------+--------------+
+

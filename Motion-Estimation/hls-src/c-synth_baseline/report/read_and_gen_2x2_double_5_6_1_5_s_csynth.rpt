@@ -1,0 +1,278 @@
+
+
+================================================================
+== Vitis HLS Report for 'read_and_gen_2x2_double_5_6_1_5_s'
+================================================================
+* Date:           Tue Apr  4 19:45:36 2023
+
+* Version:        2022.1 (Build 3526262 on Mon Apr 18 15:47:01 MDT 2022)
+* Project:        hls_EstimateMotion
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcu50-fsvh2104-2L-e
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+-----------+------------+
+    |  Clock |  Target  | Estimated | Uncertainty|
+    +--------+----------+-----------+------------+
+    |ap_clk  |  60.00 ns|  41.620 ns|    16.20 ns|
+    +--------+----------+-----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+---------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline|
+    |   min   |   max   |    min   |    max   | min | max |   Type  |
+    +---------+---------+----------+----------+-----+-----+---------+
+    |       77|       77|  4.620 us|  4.620 us|   77|   77|       no|
+    +---------+---------+----------+----------+-----+-----+---------+
+
+    + Detail: 
+        * Instance: 
+        +----------------------------------------------------------------------+-----------------------------------------------------------+---------+---------+----------+----------+-----+-----+---------+
+        |                                                                      |                                                           |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline|
+        |                               Instance                               |                           Module                          |   min   |   max   |    min   |    max   | min | max |   Type  |
+        +----------------------------------------------------------------------+-----------------------------------------------------------+---------+---------+----------+----------+-----+-----+---------+
+        |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_INIT_ACC_fu_234          |read_and_gen_2x2_double_5_6_1_5_Pipeline_INIT_ACC          |       18|       18|  1.080 us|  1.080 us|   18|   18|       no|
+        |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_CALC_ELEMENTS_fu_250     |read_and_gen_2x2_double_5_6_1_5_Pipeline_CALC_ELEMENTS     |        8|        8|  0.480 us|  0.480 us|    8|    8|       no|
+        |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_ACCU_fu_269              |read_and_gen_2x2_double_5_6_1_5_Pipeline_ACCU              |       18|       18|  1.080 us|  1.080 us|   18|   18|       no|
+        |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_280_4_fu_279  |read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_280_4  |       10|       10|  0.600 us|  0.600 us|   10|   10|       no|
+        |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_291_5_fu_289  |read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_291_5  |        6|        6|  0.360 us|  0.360 us|    6|    6|       no|
+        |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_301_6_fu_299  |read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_301_6  |        4|        4|  0.240 us|  0.240 us|    4|    4|       no|
+        +----------------------------------------------------------------------+-----------------------------------------------------------+---------+---------+----------+----------+-----+-----+---------+
+
+        * Loop: 
+        N/A
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+--------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT  | URAM|
++---------------------+---------+------+---------+--------+-----+
+|DSP                  |        -|     -|        -|       -|    -|
+|Expression           |        -|     -|        0|       4|    -|
+|FIFO                 |        -|     -|        -|       -|    -|
+|Instance             |        -|    78|      268|   13451|    -|
+|Memory               |        6|     -|      768|     780|    0|
+|Multiplexer          |        -|     -|        -|    1028|    -|
+|Register             |        -|     -|       21|       -|    -|
++---------------------+---------+------+---------+--------+-----+
+|Total                |        6|    78|     1057|   15263|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available SLR        |     1344|  2976|   871680|  435840|  320|
++---------------------+---------+------+---------+--------+-----+
+|Utilization SLR (%)  |       ~0|     2|       ~0|       3|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available            |     2688|  5952|  1743360|  871680|  640|
++---------------------+---------+------+---------+--------+-----+
+|Utilization (%)      |       ~0|     1|       ~0|       1|    0|
++---------------------+---------+------+---------+--------+-----+
+
++ Detail: 
+    * Instance: 
+    +----------------------------------------------------------------------+-----------------------------------------------------------+---------+----+-----+------+-----+
+    |                               Instance                               |                           Module                          | BRAM_18K| DSP|  FF |  LUT | URAM|
+    +----------------------------------------------------------------------+-----------------------------------------------------------+---------+----+-----+------+-----+
+    |dadd_64ns_64ns_64_1_full_dsp_1_U446                                   |dadd_64ns_64ns_64_1_full_dsp_1                             |        0|   3|    0|   708|    0|
+    |dadd_64ns_64ns_64_1_full_dsp_1_U447                                   |dadd_64ns_64ns_64_1_full_dsp_1                             |        0|   3|    0|   708|    0|
+    |dadd_64ns_64ns_64_1_full_dsp_1_U448                                   |dadd_64ns_64ns_64_1_full_dsp_1                             |        0|   3|    0|   708|    0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_ACCU_fu_269              |read_and_gen_2x2_double_5_6_1_5_Pipeline_ACCU              |        0|   9|   20|  2184|    0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_CALC_ELEMENTS_fu_250     |read_and_gen_2x2_double_5_6_1_5_Pipeline_CALC_ELEMENTS     |        0|  33|  214|  2542|    0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_INIT_ACC_fu_234          |read_and_gen_2x2_double_5_6_1_5_Pipeline_INIT_ACC          |        0|   0|    7|    49|    0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_280_4_fu_279  |read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_280_4  |        0|   9|   11|  2187|    0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_291_5_fu_289  |read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_291_5  |        0|   9|    9|  2184|    0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_301_6_fu_299  |read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_301_6  |        0|   9|    7|  2181|    0|
+    +----------------------------------------------------------------------+-----------------------------------------------------------+---------+----+-----+------+-----+
+    |Total                                                                 |                                                           |        0|  78|  268| 13451|    0|
+    +----------------------------------------------------------------------+-----------------------------------------------------------+---------+----+-----+------+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    +------------------+----------------------------------------------------------------+---------+----+----+-----+------+-----+------+-------------+
+    |      Memory      |                             Module                             | BRAM_18K| FF | LUT| URAM| Words| Bits| Banks| W*Bits*Banks|
+    +------------------+----------------------------------------------------------------+---------+----+----+-----+------+-----+------+-------------+
+    |alpha_acc_U       |read_and_gen_2x2_double_5_6_1_5_s_alpha_acc_RAM_2P_BRAM_1R1W    |        2|   0|   0|    0|    16|   64|     1|         1024|
+    |beta_acc_U        |read_and_gen_2x2_double_5_6_1_5_s_alpha_acc_RAM_2P_BRAM_1R1W    |        2|   0|   0|    0|    16|   64|     1|         1024|
+    |gamma_acc_U       |read_and_gen_2x2_double_5_6_1_5_s_alpha_acc_RAM_2P_BRAM_1R1W    |        2|   0|   0|    0|    16|   64|     1|         1024|
+    |alpha_sum_U       |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_RAM_AUTO_1R1W       |        0|  64|  65|    0|    16|   64|     1|         1024|
+    |beta_sum_U        |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_RAM_AUTO_1R1W       |        0|  64|  65|    0|    16|   64|     1|         1024|
+    |gamma_sum_U       |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_RAM_AUTO_1R1W       |        0|  64|  65|    0|    16|   64|     1|         1024|
+    |alpha_sum_tmp0_U  |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp0_RAM_AUTO_1R1W  |        0|  64|  65|    0|     8|   64|     1|          512|
+    |beta_sum_tmp0_U   |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp0_RAM_AUTO_1R1W  |        0|  64|  65|    0|     8|   64|     1|          512|
+    |gamma_sum_tmp0_U  |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp0_RAM_AUTO_1R1W  |        0|  64|  65|    0|     8|   64|     1|          512|
+    |alpha_sum_tmp1_U  |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp1_RAM_AUTO_1R1W  |        0|  64|  65|    0|     4|   64|     1|          256|
+    |beta_sum_tmp1_U   |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp1_RAM_AUTO_1R1W  |        0|  64|  65|    0|     4|   64|     1|          256|
+    |gamma_sum_tmp1_U  |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp1_RAM_AUTO_1R1W  |        0|  64|  65|    0|     4|   64|     1|          256|
+    |alpha_sum_tmp2_U  |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp2_RAM_AUTO_1R1W  |        0|  64|  65|    0|     2|   64|     1|          128|
+    |beta_sum_tmp2_U   |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp2_RAM_AUTO_1R1W  |        0|  64|  65|    0|     2|   64|     1|          128|
+    |gamma_sum_tmp2_U  |read_and_gen_2x2_double_5_6_1_5_s_alpha_sum_tmp2_RAM_AUTO_1R1W  |        0|  64|  65|    0|     2|   64|     1|          128|
+    +------------------+----------------------------------------------------------------+---------+----+----+-----+------+-----+------+-------------+
+    |Total             |                                                                |        6| 768| 780|    0|   138|  960|    15|         8832|
+    +------------------+----------------------------------------------------------------+---------+----+----+-----+------+-----+------+-------------+
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +------------------+----------+----+---+----+------------+------------+
+    |   Variable Name  | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +------------------+----------+----+---+----+------------+------------+
+    |ap_block_state1   |        or|   0|  0|   2|           1|           1|
+    |ap_block_state14  |        or|   0|  0|   2|           1|           1|
+    +------------------+----------+----+---+----+------------+------------+
+    |Total             |          |   0|  0|   4|           2|           2|
+    +------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |alpha_acc_address0       |  14|          3|    4|         12|
+    |alpha_acc_address1       |  14|          3|    4|         12|
+    |alpha_acc_ce0            |  14|          3|    1|          3|
+    |alpha_acc_ce1            |  14|          3|    1|          3|
+    |alpha_acc_d1             |  14|          3|   64|        192|
+    |alpha_acc_we1            |  14|          3|    1|          3|
+    |alpha_strm32_blk_n       |   9|          2|    1|          2|
+    |alpha_sum_address0       |  20|          4|    4|         16|
+    |alpha_sum_address1       |  14|          3|    4|         12|
+    |alpha_sum_ce0            |  20|          4|    1|          4|
+    |alpha_sum_ce1            |  14|          3|    1|          3|
+    |alpha_sum_d0             |  14|          3|   64|        192|
+    |alpha_sum_tmp0_address0  |  14|          3|    3|          9|
+    |alpha_sum_tmp0_ce0       |  14|          3|    1|          3|
+    |alpha_sum_tmp0_ce1       |   9|          2|    1|          2|
+    |alpha_sum_tmp0_we0       |   9|          2|    1|          2|
+    |alpha_sum_tmp1_address0  |  14|          3|    2|          6|
+    |alpha_sum_tmp1_ce0       |  14|          3|    1|          3|
+    |alpha_sum_tmp1_ce1       |   9|          2|    1|          2|
+    |alpha_sum_tmp1_we0       |   9|          2|    1|          2|
+    |alpha_sum_tmp2_address0  |  14|          3|    1|          3|
+    |alpha_sum_tmp2_ce0       |  14|          3|    1|          3|
+    |alpha_sum_tmp2_we0       |   9|          2|    1|          2|
+    |alpha_sum_we0            |  14|          3|    1|          3|
+    |ap_NS_fsm                |  65|         15|    1|         15|
+    |ap_done                  |   9|          2|    1|          2|
+    |beta_acc_address0        |  14|          3|    4|         12|
+    |beta_acc_address1        |  14|          3|    4|         12|
+    |beta_acc_ce0             |  14|          3|    1|          3|
+    |beta_acc_ce1             |  14|          3|    1|          3|
+    |beta_acc_d1              |  14|          3|   64|        192|
+    |beta_acc_we1             |  14|          3|    1|          3|
+    |beta_strm33_blk_n        |   9|          2|    1|          2|
+    |beta_sum_address0        |  20|          4|    4|         16|
+    |beta_sum_address1        |  14|          3|    4|         12|
+    |beta_sum_ce0             |  20|          4|    1|          4|
+    |beta_sum_ce1             |  14|          3|    1|          3|
+    |beta_sum_d0              |  14|          3|   64|        192|
+    |beta_sum_tmp0_address0   |  14|          3|    3|          9|
+    |beta_sum_tmp0_ce0        |  14|          3|    1|          3|
+    |beta_sum_tmp0_ce1        |   9|          2|    1|          2|
+    |beta_sum_tmp0_we0        |   9|          2|    1|          2|
+    |beta_sum_tmp1_address0   |  14|          3|    2|          6|
+    |beta_sum_tmp1_ce0        |  14|          3|    1|          3|
+    |beta_sum_tmp1_ce1        |   9|          2|    1|          2|
+    |beta_sum_tmp1_we0        |   9|          2|    1|          2|
+    |beta_sum_tmp2_address0   |  14|          3|    1|          3|
+    |beta_sum_tmp2_ce0        |  14|          3|    1|          3|
+    |beta_sum_tmp2_we0        |   9|          2|    1|          2|
+    |beta_sum_we0             |  14|          3|    1|          3|
+    |gamma_acc_address0       |  14|          3|    4|         12|
+    |gamma_acc_address1       |  14|          3|    4|         12|
+    |gamma_acc_ce0            |  14|          3|    1|          3|
+    |gamma_acc_ce1            |  14|          3|    1|          3|
+    |gamma_acc_d1             |  14|          3|   64|        192|
+    |gamma_acc_we1            |  14|          3|    1|          3|
+    |gamma_strm34_blk_n       |   9|          2|    1|          2|
+    |gamma_sum_address0       |  20|          4|    4|         16|
+    |gamma_sum_address1       |  14|          3|    4|         12|
+    |gamma_sum_ce0            |  20|          4|    1|          4|
+    |gamma_sum_ce1            |  14|          3|    1|          3|
+    |gamma_sum_d0             |  14|          3|   64|        192|
+    |gamma_sum_tmp0_address0  |  14|          3|    3|          9|
+    |gamma_sum_tmp0_ce0       |  14|          3|    1|          3|
+    |gamma_sum_tmp0_ce1       |   9|          2|    1|          2|
+    |gamma_sum_tmp0_we0       |   9|          2|    1|          2|
+    |gamma_sum_tmp1_address0  |  14|          3|    2|          6|
+    |gamma_sum_tmp1_ce0       |  14|          3|    1|          3|
+    |gamma_sum_tmp1_ce1       |   9|          2|    1|          2|
+    |gamma_sum_tmp1_we0       |   9|          2|    1|          2|
+    |gamma_sum_tmp2_address0  |  14|          3|    1|          3|
+    |gamma_sum_tmp2_ce0       |  14|          3|    1|          3|
+    |gamma_sum_tmp2_we0       |   9|          2|    1|          2|
+    |gamma_sum_we0            |  14|          3|    1|          3|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    |1028|        221|  497|       1499|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-----------------------------------------------------------------------------------+----+----+-----+-----------+
+    |                                        Name                                       | FF | LUT| Bits| Const Bits|
+    +-----------------------------------------------------------------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                                                                          |  14|   0|   14|          0|
+    |ap_done_reg                                                                        |   1|   0|    1|          0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_ACCU_fu_269_ap_start_reg              |   1|   0|    1|          0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_CALC_ELEMENTS_fu_250_ap_start_reg     |   1|   0|    1|          0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_INIT_ACC_fu_234_ap_start_reg          |   1|   0|    1|          0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_280_4_fu_279_ap_start_reg  |   1|   0|    1|          0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_291_5_fu_289_ap_start_reg  |   1|   0|    1|          0|
+    |grp_read_and_gen_2x2_double_5_6_1_5_Pipeline_VITIS_LOOP_301_6_fu_299_ap_start_reg  |   1|   0|    1|          0|
+    +-----------------------------------------------------------------------------------+----+----+-----+-----------+
+    |Total                                                                              |  21|   0|   21|          0|
+    +-----------------------------------------------------------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++---------------------+-----+-----+------------+--------------------------------------+--------------+
+|      RTL Ports      | Dir | Bits|  Protocol  |             Source Object            |    C Type    |
++---------------------+-----+-----+------------+--------------------------------------+--------------+
+|ap_clk               |   in|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>|  return value|
+|ap_rst               |   in|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>|  return value|
+|ap_start             |   in|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>|  return value|
+|ap_done              |  out|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>|  return value|
+|ap_continue          |   in|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>|  return value|
+|ap_idle              |  out|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>|  return value|
+|ap_ready             |  out|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>|  return value|
+|matA_address0        |  out|    5|   ap_memory|                                  matA|         array|
+|matA_ce0             |  out|    1|   ap_memory|                                  matA|         array|
+|matA_q0              |   in|   64|   ap_memory|                                  matA|         array|
+|matA_address1        |  out|    5|   ap_memory|                                  matA|         array|
+|matA_ce1             |  out|    1|   ap_memory|                                  matA|         array|
+|matA_q1              |   in|   64|   ap_memory|                                  matA|         array|
+|A_i_address1         |  out|    3|   ap_memory|                                   A_i|         array|
+|A_i_ce1              |  out|    1|   ap_memory|                                   A_i|         array|
+|A_i_we1              |  out|    1|   ap_memory|                                   A_i|         array|
+|A_i_d1               |  out|   64|   ap_memory|                                   A_i|         array|
+|A_j_address1         |  out|    3|   ap_memory|                                   A_j|         array|
+|A_j_ce1              |  out|    1|   ap_memory|                                   A_j|         array|
+|A_j_we1              |  out|    1|   ap_memory|                                   A_j|         array|
+|A_j_d1               |  out|   64|   ap_memory|                                   A_j|         array|
+|m                    |   in|    3|     ap_none|                                     m|        scalar|
+|col_i                |   in|    3|     ap_none|                                 col_i|        scalar|
+|col_j                |   in|    3|     ap_none|                                 col_j|        scalar|
+|alpha_strm32_din     |  out|   64|     ap_fifo|                          alpha_strm32|       pointer|
+|alpha_strm32_full_n  |   in|    1|     ap_fifo|                          alpha_strm32|       pointer|
+|alpha_strm32_write   |  out|    1|     ap_fifo|                          alpha_strm32|       pointer|
+|beta_strm33_din      |  out|   64|     ap_fifo|                           beta_strm33|       pointer|
+|beta_strm33_full_n   |   in|    1|     ap_fifo|                           beta_strm33|       pointer|
+|beta_strm33_write    |  out|    1|     ap_fifo|                           beta_strm33|       pointer|
+|gamma_strm34_din     |  out|   64|     ap_fifo|                          gamma_strm34|       pointer|
+|gamma_strm34_full_n  |   in|    1|     ap_fifo|                          gamma_strm34|       pointer|
+|gamma_strm34_write   |  out|    1|     ap_fifo|                          gamma_strm34|       pointer|
++---------------------+-----+-----+------------+--------------------------------------+--------------+
+

@@ -1,0 +1,160 @@
+
+
+================================================================
+== Vitis HLS Report for 'read_and_gen_2x2_double_5_6_1_5_Pipeline_INIT_ACC'
+================================================================
+* Date:           Tue Apr  4 19:45:34 2023
+
+* Version:        2022.1 (Build 3526262 on Mon Apr 18 15:47:01 MDT 2022)
+* Project:        hls_EstimateMotion
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcu50-fsvh2104-2L-e
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  60.00 ns|  1.837 ns|    16.20 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+---------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline|
+    |   min   |   max   |    min   |    max   | min | max |   Type  |
+    +---------+---------+----------+----------+-----+-----+---------+
+    |       18|       18|  1.080 us|  1.080 us|   18|   18|       no|
+    +---------+---------+----------+----------+-----+-----+---------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +------------+---------+---------+----------+-----------+-----------+------+----------+
+        |            |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        |  Loop Name |   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +------------+---------+---------+----------+-----------+-----------+------+----------+
+        |- INIT_ACC  |       16|       16|         1|          1|          1|    16|       yes|
+        +------------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+--------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT  | URAM|
++---------------------+---------+------+---------+--------+-----+
+|DSP                  |        -|     -|        -|       -|    -|
+|Expression           |        -|     -|        0|      22|    -|
+|FIFO                 |        -|     -|        -|       -|    -|
+|Instance             |        -|     -|        -|       -|    -|
+|Memory               |        -|     -|        -|       -|    -|
+|Multiplexer          |        -|     -|        -|      27|    -|
+|Register             |        -|     -|        7|       -|    -|
++---------------------+---------+------+---------+--------+-----+
+|Total                |        0|     0|        7|      49|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available SLR        |     1344|  2976|   871680|  435840|  320|
++---------------------+---------+------+---------+--------+-----+
+|Utilization SLR (%)  |        0|     0|       ~0|      ~0|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available            |     2688|  5952|  1743360|  871680|  640|
++---------------------+---------+------+---------+--------+-----+
+|Utilization (%)      |        0|     0|       ~0|      ~0|    0|
++---------------------+---------+------+---------+--------+-----+
+
++ Detail: 
+    * Instance: 
+    N/A
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +----------------------+----------+----+---+----+------------+------------+
+    |     Variable Name    | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +----------------------+----------+----+---+----+------------+------------+
+    |add_ln222_fu_160_p2   |         +|   0|  0|  12|           5|           1|
+    |icmp_ln222_fu_154_p2  |      icmp|   0|  0|  10|           5|           6|
+    +----------------------+----------+----+---+----+------------+------------+
+    |Total                 |          |   0|  0|  22|          10|           7|
+    +----------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +----------------------+----+-----------+-----+-----------+
+    |         Name         | LUT| Input Size| Bits| Total Bits|
+    +----------------------+----+-----------+-----+-----------+
+    |ap_done_int           |   9|          2|    1|          2|
+    |ap_sig_allocacmp_t_1  |   9|          2|    5|         10|
+    |t_fu_46               |   9|          2|    5|         10|
+    +----------------------+----+-----------+-----+-----------+
+    |Total                 |  27|          6|   11|         22|
+    +----------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------+---+----+-----+-----------+
+    |     Name    | FF| LUT| Bits| Const Bits|
+    +-------------+---+----+-----+-----------+
+    |ap_CS_fsm    |  1|   0|    1|          0|
+    |ap_done_reg  |  1|   0|    1|          0|
+    |t_fu_46      |  5|   0|    5|          0|
+    +-------------+---+----+-----+-----------+
+    |Total        |  7|   0|    7|          0|
+    +-------------+---+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++--------------------+-----+-----+------------+--------------------------------------------------------+--------------+
+|      RTL Ports     | Dir | Bits|  Protocol  |                      Source Object                     |    C Type    |
++--------------------+-----+-----+------------+--------------------------------------------------------+--------------+
+|ap_clk              |   in|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>_Pipeline_INIT_ACC|  return value|
+|ap_rst              |   in|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>_Pipeline_INIT_ACC|  return value|
+|ap_start            |   in|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>_Pipeline_INIT_ACC|  return value|
+|ap_done             |  out|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>_Pipeline_INIT_ACC|  return value|
+|ap_idle             |  out|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>_Pipeline_INIT_ACC|  return value|
+|ap_ready            |  out|    1|  ap_ctrl_hs|  read_and_gen_2x2<double, 5, 6, 1, 5>_Pipeline_INIT_ACC|  return value|
+|alpha_acc_address1  |  out|    4|   ap_memory|                                               alpha_acc|         array|
+|alpha_acc_ce1       |  out|    1|   ap_memory|                                               alpha_acc|         array|
+|alpha_acc_we1       |  out|    1|   ap_memory|                                               alpha_acc|         array|
+|alpha_acc_d1        |  out|   64|   ap_memory|                                               alpha_acc|         array|
+|beta_acc_address1   |  out|    4|   ap_memory|                                                beta_acc|         array|
+|beta_acc_ce1        |  out|    1|   ap_memory|                                                beta_acc|         array|
+|beta_acc_we1        |  out|    1|   ap_memory|                                                beta_acc|         array|
+|beta_acc_d1         |  out|   64|   ap_memory|                                                beta_acc|         array|
+|gamma_acc_address1  |  out|    4|   ap_memory|                                               gamma_acc|         array|
+|gamma_acc_ce1       |  out|    1|   ap_memory|                                               gamma_acc|         array|
+|gamma_acc_we1       |  out|    1|   ap_memory|                                               gamma_acc|         array|
+|gamma_acc_d1        |  out|   64|   ap_memory|                                               gamma_acc|         array|
+|alpha_sum_address0  |  out|    4|   ap_memory|                                               alpha_sum|         array|
+|alpha_sum_ce0       |  out|    1|   ap_memory|                                               alpha_sum|         array|
+|alpha_sum_we0       |  out|    1|   ap_memory|                                               alpha_sum|         array|
+|alpha_sum_d0        |  out|   64|   ap_memory|                                               alpha_sum|         array|
+|beta_sum_address0   |  out|    4|   ap_memory|                                                beta_sum|         array|
+|beta_sum_ce0        |  out|    1|   ap_memory|                                                beta_sum|         array|
+|beta_sum_we0        |  out|    1|   ap_memory|                                                beta_sum|         array|
+|beta_sum_d0         |  out|   64|   ap_memory|                                                beta_sum|         array|
+|gamma_sum_address0  |  out|    4|   ap_memory|                                               gamma_sum|         array|
+|gamma_sum_ce0       |  out|    1|   ap_memory|                                               gamma_sum|         array|
+|gamma_sum_we0       |  out|    1|   ap_memory|                                               gamma_sum|         array|
+|gamma_sum_d0        |  out|   64|   ap_memory|                                               gamma_sum|         array|
++--------------------+-----+-----+------------+--------------------------------------------------------+--------------+
+

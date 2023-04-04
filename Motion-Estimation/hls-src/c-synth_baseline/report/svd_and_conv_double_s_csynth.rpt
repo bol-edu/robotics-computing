@@ -1,0 +1,164 @@
+
+
+================================================================
+== Vitis HLS Report for 'svd_and_conv_double_s'
+================================================================
+* Date:           Tue Apr  4 19:45:38 2023
+
+* Version:        2022.1 (Build 3526262 on Mon Apr 18 15:47:01 MDT 2022)
+* Project:        hls_EstimateMotion
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcu50-fsvh2104-2L-e
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+-----------+------------+
+    |  Clock |  Target  | Estimated | Uncertainty|
+    +--------+----------+-----------+------------+
+    |ap_clk  |  60.00 ns|  41.766 ns|    16.20 ns|
+    +--------+----------+-----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+----------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline |
+    |   min   |   max   |    min   |    max   | min | max |   Type   |
+    +---------+---------+----------+----------+-----+-----+----------+
+    |       16|       16|  0.960 us|  0.960 us|    9|    9|  dataflow|
+    +---------+---------+----------+----------+-----+-----+----------+
+
+    + Detail: 
+        * Instance: 
+        +-------------------------------+------------------------------+---------+---------+----------+----------+-----+-----+---------+
+        |                               |                              |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline|
+        |            Instance           |            Module            |   min   |   max   |    min   |    max   | min | max |   Type  |
+        +-------------------------------+------------------------------+---------+---------+----------+----------+-----+-----+---------+
+        |jacobi_rotation_2x2_double_U0  |jacobi_rotation_2x2_double_s  |       16|       16|  0.960 us|  0.960 us|    1|    1|      yes|
+        |calc_converge_double_U0        |calc_converge_double_s        |        8|        8|  0.480 us|  0.480 us|    8|    8|       no|
+        +-------------------------------+------------------------------+---------+---------+----------+----------+-----+-----+---------+
+
+        * Loop: 
+        N/A
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+--------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT  | URAM|
++---------------------+---------+------+---------+--------+-----+
+|DSP                  |        -|     -|        -|       -|    -|
+|Expression           |        -|     -|        0|      16|    -|
+|FIFO                 |        -|     -|        -|       -|    -|
+|Instance             |        -|    32|     1181|    3827|    -|
+|Memory               |        -|     -|        -|       -|    -|
+|Multiplexer          |        -|     -|        -|      18|    -|
+|Register             |        -|     -|        2|       -|    -|
++---------------------+---------+------+---------+--------+-----+
+|Total                |        0|    32|     1183|    3861|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available SLR        |     1344|  2976|   871680|  435840|  320|
++---------------------+---------+------+---------+--------+-----+
+|Utilization SLR (%)  |        0|     1|       ~0|      ~0|    0|
++---------------------+---------+------+---------+--------+-----+
+|Available            |     2688|  5952|  1743360|  871680|  640|
++---------------------+---------+------+---------+--------+-----+
+|Utilization (%)      |        0|    ~0|       ~0|      ~0|    0|
++---------------------+---------+------+---------+--------+-----+
+
++ Detail: 
+    * Instance: 
+    +-------------------------------+------------------------------+---------+----+------+------+-----+
+    |            Instance           |            Module            | BRAM_18K| DSP|  FF  |  LUT | URAM|
+    +-------------------------------+------------------------------+---------+----+------+------+-----+
+    |calc_converge_double_U0        |calc_converge_double_s        |        0|   8|   138|   180|    0|
+    |jacobi_rotation_2x2_double_U0  |jacobi_rotation_2x2_double_s  |        0|  24|  1043|  3647|    0|
+    +-------------------------------+------------------------------+---------+----+------+------+-----+
+    |Total                          |                              |        0|  32|  1181|  3827|    0|
+    +-------------------------------+------------------------------+---------+----+------+------+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +------------------------------------------------+----------+----+---+----+------------+------------+
+    |                  Variable Name                 | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +------------------------------------------------+----------+----+---+----+------------+------------+
+    |ap_idle                                         |       and|   0|  0|   2|           1|           1|
+    |ap_sync_continue                                |       and|   0|  0|   2|           1|           1|
+    |ap_sync_done                                    |       and|   0|  0|   2|           1|           1|
+    |ap_sync_ready                                   |       and|   0|  0|   2|           1|           1|
+    |calc_converge_double_U0_ap_start                |       and|   0|  0|   2|           1|           1|
+    |jacobi_rotation_2x2_double_U0_ap_start          |       and|   0|  0|   2|           1|           1|
+    |ap_sync_calc_converge_double_U0_ap_ready        |        or|   0|  0|   2|           1|           1|
+    |ap_sync_jacobi_rotation_2x2_double_U0_ap_ready  |        or|   0|  0|   2|           1|           1|
+    +------------------------------------------------+----------+----+---+----+------------+------------+
+    |Total                                           |          |   0|  0|  16|           8|           8|
+    +------------------------------------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +----------------------------------------------------+----+-----------+-----+-----------+
+    |                        Name                        | LUT| Input Size| Bits| Total Bits|
+    +----------------------------------------------------+----+-----------+-----+-----------+
+    |ap_sync_reg_calc_converge_double_U0_ap_ready        |   9|          2|    1|          2|
+    |ap_sync_reg_jacobi_rotation_2x2_double_U0_ap_ready  |   9|          2|    1|          2|
+    +----------------------------------------------------+----+-----------+-----+-----------+
+    |Total                                               |  18|          4|    2|          4|
+    +----------------------------------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +----------------------------------------------------+---+----+-----+-----------+
+    |                        Name                        | FF| LUT| Bits| Const Bits|
+    +----------------------------------------------------+---+----+-----+-----------+
+    |ap_sync_reg_calc_converge_double_U0_ap_ready        |  1|   0|    1|          0|
+    |ap_sync_reg_jacobi_rotation_2x2_double_U0_ap_ready  |  1|   0|    1|          0|
+    +----------------------------------------------------+---+----+-----+-----------+
+    |Total                                               |  2|   0|    2|          0|
+    +----------------------------------------------------+---+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++--------------------+-----+-----+------------+----------------------+--------------+
+|      RTL Ports     | Dir | Bits|  Protocol  |     Source Object    |    C Type    |
++--------------------+-----+-----+------------+----------------------+--------------+
+|alpha               |   in|   64|     ap_none|                 alpha|        scalar|
+|alpha_ap_vld        |   in|    1|     ap_none|                 alpha|        scalar|
+|beta                |   in|   64|     ap_none|                  beta|        scalar|
+|beta_ap_vld         |   in|    1|     ap_none|                  beta|        scalar|
+|gamma               |   in|   64|     ap_none|                 gamma|        scalar|
+|gamma_ap_vld        |   in|    1|     ap_none|                 gamma|        scalar|
+|conv_strm37_din     |  out|   64|     ap_fifo|           conv_strm37|       pointer|
+|conv_strm37_full_n  |   in|    1|     ap_fifo|           conv_strm37|       pointer|
+|conv_strm37_write   |  out|    1|     ap_fifo|           conv_strm37|       pointer|
+|s_strm35_din        |  out|   64|     ap_fifo|              s_strm35|       pointer|
+|s_strm35_full_n     |   in|    1|     ap_fifo|              s_strm35|       pointer|
+|s_strm35_write      |  out|    1|     ap_fifo|              s_strm35|       pointer|
+|c_strm36_din        |  out|   64|     ap_fifo|              c_strm36|       pointer|
+|c_strm36_full_n     |   in|    1|     ap_fifo|              c_strm36|       pointer|
+|c_strm36_write      |  out|    1|     ap_fifo|              c_strm36|       pointer|
+|ap_clk              |   in|    1|  ap_ctrl_hs|  svd_and_conv<double>|  return value|
+|ap_rst              |   in|    1|  ap_ctrl_hs|  svd_and_conv<double>|  return value|
+|ap_start            |   in|    1|  ap_ctrl_hs|  svd_and_conv<double>|  return value|
+|ap_done             |  out|    1|  ap_ctrl_hs|  svd_and_conv<double>|  return value|
+|ap_ready            |  out|    1|  ap_ctrl_hs|  svd_and_conv<double>|  return value|
+|ap_idle             |  out|    1|  ap_ctrl_hs|  svd_and_conv<double>|  return value|
+|ap_continue         |   in|    1|  ap_ctrl_hs|  svd_and_conv<double>|  return value|
++--------------------+-----+-----+------------+----------------------+--------------+
+
