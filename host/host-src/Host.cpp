@@ -249,7 +249,7 @@ int main(int argc, const char** argv) {
 			OCL_CHECK(errCode, cl::Buffer GlobMem_rmat		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 3,		(void*)rmat.data,		&errCode));
 			OCL_CHECK(errCode, cl::Buffer GlobMem_tvec		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 1,		(void*)tvec.data,		&errCode));
 
-			OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Depth				(Context, CL_MEM_READ_WRITE, sizeof(uchar)* height* width,	NULL, &errCode));
+			OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Depth				(Context, CL_MEM_READ_WRITE, sizeof(float)* height* width,	NULL, &errCode));
 			OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_KP0				(Context, CL_MEM_READ_WRITE, sizeof(float) * 2 * 500,		NULL, &errCode));
 			OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_KP1				(Context, CL_MEM_READ_WRITE, sizeof(float) * 2 * 500,		NULL, &errCode));
 			OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Des0				(Context, CL_MEM_READ_WRITE, sizeof(uchar) * 32 * 500,		NULL, &errCode));
@@ -309,7 +309,7 @@ int main(int argc, const char** argv) {
 				OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 3,		(void*)K_Left.data,		&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_T_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Left.data,		&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_T_Right	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Right.data,	&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_Depth		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)Depth.data, 		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_Depth		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float)* height* width, (void*)Depth.data, 		&errCode));
 
 				OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(0, GlobMem_ImgLeft_0));
 				OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(1, GlobMem_ImgRight_0));
@@ -487,12 +487,18 @@ int main(int argc, const char** argv) {
 				#ifdef _INFO_
 					std::cout << "[HOST-Info] Compute Stereo Matching Using HLS..." << endl;
 				#endif
+
 					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_K_Left, GlobMem_T_Left, GlobMem_T_Right, GlobMem_ImgLeft_0, GlobMem_ImgRight_0, GlobMem_Depth}, 0, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_StereoMatching, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_Depth}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
 					Queue.finish();
+
+				#ifdef _PRINT_
+					string Depth_name = OUTPUT_PATH + "K_StereoMatching/Depth_iteration" + std::to_string(i) + ".txt";
+					BasicFunction::print_content(Depth_name, &Depth);
+				#endif
 			#else
 				#ifdef _INFO_
 					std::cout << "[HOST-Info] Compute Stereo Matching Using C..." << endl;
@@ -535,16 +541,16 @@ int main(int argc, const char** argv) {
 					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_KP1, GlobMem_Des1}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
 
 					Queue.finish();
-					#ifdef _PRINT_
-					string KP0_name = OUTPUT_PATH + "K_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".txt";
-					string KP1_name = OUTPUT_PATH + "K_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".txt";
-					string Des0_name = OUTPUT_PATH + "K_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".txt";
-					string Dea1_name = OUTPUT_PATH + "K_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".txt";
-					BasicFunction::print_content(KP0_name, KP0, 2, 500);
-					BasicFunction::print_content(KP1_name, KP1, 2, 500);
-					BasicFunction::print_content(Des0_name, &Des0);
-					BasicFunction::print_content(Dea1_name, &Des1);
-					#endif
+				#ifdef _PRINT_
+				string KP0_name = OUTPUT_PATH + "K_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".txt";
+				string KP1_name = OUTPUT_PATH + "K_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".txt";
+				string Des0_name = OUTPUT_PATH + "K_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".txt";
+				string Dea1_name = OUTPUT_PATH + "K_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".txt";
+				BasicFunction::print_content(KP0_name, KP0, 2, 500);
+				BasicFunction::print_content(KP1_name, KP1, 2, 500);
+				BasicFunction::print_content(Des0_name, &Des0);
+				BasicFunction::print_content(Dea1_name, &Des1);
+				#endif
 
 			#else
 
