@@ -3113,7 +3113,7 @@ void compute( uchar* imgPyramid_data,
 				ky.at<float>(i) = (float)kernel_bitexact[i];
 
 			//workingMat.data[0] = 0;
-			//sepFilter2D__(workingMat, workingMat, sdepth, kx, ky, Point__(-1, -1), 0, BORDER_REFLECT_101, wholeLinfo.x, wholeLinfo.y);
+			sepFilter2D__(workingMat, workingMat, sdepth, kx, ky, Point__(-1, -1), 0, BORDER_REFLECT_101, wholeLinfo.x, wholeLinfo.y);
 
 
 		}
