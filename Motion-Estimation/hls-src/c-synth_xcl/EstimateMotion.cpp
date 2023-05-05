@@ -1,14 +1,15 @@
 #include "EstimateMotion.h"
 
 void estimate_motion(MATCH *match, int match_num,
-                     IPOINT *kp0, IPOINT *kp1,
+                     FLOAT *kp0, FLOAT *kp1,
                      FLOAT fx_in, FLOAT fy_in, FLOAT cx_in, FLOAT cy_in,
                      volatile FLOAT *depths,
+					 int threshold_, FLOAT confidence_, int maxiter_,
                      FLOAT rmat[9], FLOAT tvec[3])
 {
 #pragma HLS INTERFACE mode = m_axi depth = 500 port = match offset = slave bundle = BUS_A
-#pragma HLS INTERFACE mode = m_axi depth = 500 port = kp0 offset = slave bundle = BUS_A
-#pragma HLS INTERFACE mode = m_axi depth = 500 port = kp1 offset = slave
+#pragma HLS INTERFACE mode = m_axi depth = 1000 port = kp0 offset = slave bundle = BUS_A
+#pragma HLS INTERFACE mode = m_axi depth = 1000 port = kp1 offset = slave
 #pragma HLS INTERFACE mode = m_axi depth = 466616 port = depths offset = slave
 #pragma HLS INTERFACE mode = m_axi depth = 9 port = rmat offset = slave
 #pragma HLS INTERFACE mode = m_axi depth = 3 port = tvec offset = slave
@@ -23,22 +24,28 @@ void estimate_motion(MATCH *match, int match_num,
 #pragma HLS INTERFACE mode = s_axilite port = fy_in
 #pragma HLS INTERFACE mode = s_axilite port = cx_in
 #pragma HLS INTERFACE mode = s_axilite port = cy_in
+#pragma HLS INTERFACE mode = s_axilite port = threshold_
+#pragma HLS INTERFACE mode = s_axilite port = confidence_
+#pragma HLS INTERFACE mode = s_axilite port = maxiter_
 #pragma HLS INTERFACE mode = s_axilite port = return
 
     OPOINT opoint[MAX_KEYPOINT_NUM];
     IPOINT ipoint[MAX_KEYPOINT_NUM];
     FLOAT fx = fx_in, fy = fy_in, cx = cx_in, cy = cy_in;
+    int threshold = threshold_;
+    int maxiter = maxiter_;
+    FLOAT confidence = confidence_;
     int point_num;
 
     match_points(match, match_num, kp0, kp1, fx, fy, cx, cy, depths, point_num, opoint, ipoint);
 
-    RANSAC_PnP(opoint, ipoint, point_num, fx, fy, cx, cy, rmat, tvec);
+    RANSAC_PnP(opoint, ipoint, point_num, fx, fy, cx, cy, threshold, confidence, maxiter, rmat, tvec);
 
     return;
 }
 
 void match_points(MATCH *match, int match_num,
-                  IPOINT *kp0, IPOINT *kp1,
+                  FLOAT *kp0, FLOAT *kp1,
                   FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy,
                   volatile FLOAT *depth, int &point_num,
                   OPOINT opoint[MAX_KEYPOINT_NUM],
@@ -47,8 +54,8 @@ void match_points(MATCH *match, int match_num,
     point_num = 0;
     for (int i = 0; i < match_num; i++)
     {
-        FLOAT u = kp0[match[i].a].x;
-        FLOAT v = kp0[match[i].a].y;
+        FLOAT u = kp0[match[i].a * 2];
+        FLOAT v = kp0[match[i].a * 2 + 1];
         FLOAT z = depth[IMAGE_WIDTH * (int)v + (int)u];
         if (z > MAX_DEPTH)
             continue;
@@ -57,8 +64,8 @@ void match_points(MATCH *match, int match_num,
         opoint[point_num].y = z * (v - cy) / fy;
         opoint[point_num].z = z;
 
-        ipoint[point_num].x = kp1[match[i].b].x;
-        ipoint[point_num].y = kp1[match[i].b].y;
+        ipoint[point_num].x = kp1[match[i].b * 2];
+        ipoint[point_num].y = kp1[match[i].b * 2 + 1];
         point_num++;
     }
 }
@@ -66,10 +73,11 @@ void match_points(MATCH *match, int match_num,
 void RANSAC_PnP(OPOINT opoint[MAX_KEYPOINT_NUM],
                 IPOINT ipoint[MAX_KEYPOINT_NUM],
                 unsigned int point_num, FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy,
+				int threshold, FLOAT confidence, int maxiter,
                 FLOAT rmat[9], FLOAT tvec[3])
 {
 	int maxGoodCount = 0;
-    int niters = MAXITER;
+    int niters = maxiter;
     RNG_state = (unsigned long long)-1;
     bool best_mask[MAX_KEYPOINT_NUM];
 
@@ -105,7 +113,7 @@ void RANSAC_PnP(OPOINT opoint[MAX_KEYPOINT_NUM],
         {
             FLOAT err = hls::pow(ipoint[i].x - projPoint[i].x, 2.f) +
                         hls::pow(ipoint[i].y - projPoint[i].y, 2.f);
-            bool f = (err <= THRESHOLD);
+            bool f = (err <= threshold);
             mask[i] = f;
             goodCount += f;
         }
@@ -129,7 +137,7 @@ void RANSAC_PnP(OPOINT opoint[MAX_KEYPOINT_NUM],
             }
             else
             {
-                FLOAT num = hls::log(1.f - CONFIDENCE);
+                FLOAT num = hls::log(1.f - confidence);
                 denom = hls::log(denom);
                 if (denom < 0 && num > niters * denom)
                     niters = hls::round(num / denom);

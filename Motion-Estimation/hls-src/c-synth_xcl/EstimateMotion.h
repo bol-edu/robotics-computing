@@ -7,31 +7,30 @@
 
 #define MAX_DEPTH 3000
 #define MODEL_POINTS 5
-#define CONFIDENCE 0.99f
-#define THRESHOLD 64
-#define MAXITER 1000
 #define RNG_COEF 4164903690ULL
 
 static unsigned long long RNG_state;
 
 extern "C"{
-void estimate_motion(MATCH* match, int match_num,
-					 IPOINT* kp0, IPOINT* kp1,
-					 FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy,
-					 volatile FLOAT* depths,
-		             FLOAT rmat[9], FLOAT tvec[3]);
+void estimate_motion(MATCH *match, int match_num,
+                     FLOAT *kp0, FLOAT *kp1,
+                     FLOAT fx_in, FLOAT fy_in, FLOAT cx_in, FLOAT cy_in,
+                     volatile FLOAT *depths,
+					 int threshold_, float confidence_, int maxiter_,
+                     FLOAT rmat[9], FLOAT tvec[3]);
 }
 
 void match_points(MATCH* match, int match_num,
-				  IPOINT* kp0, IPOINT* kp1,
+				  FLOAT* kp0, FLOAT* kp1,
 				  FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy,
 				  volatile FLOAT* depth, int &point_num,
 				  OPOINT opoint[MAX_KEYPOINT_NUM],
 				  IPOINT ipoint[MAX_KEYPOINT_NUM]);
 
 void RANSAC_PnP(OPOINT opoint[MAX_KEYPOINT_NUM],
-				IPOINT ipoint[MAX_KEYPOINT_NUM],
-				unsigned int point_num, FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy,
+                IPOINT ipoint[MAX_KEYPOINT_NUM],
+                unsigned int point_num, FLOAT fx, FLOAT fy, FLOAT cx, FLOAT cy,
+				int threshold, FLOAT confidence, int maxiter,
                 FLOAT rmat[9], FLOAT tvec[3]);
 
 void generate_5_indices(unsigned int point_num, unsigned int idx[MODEL_POINTS]);
