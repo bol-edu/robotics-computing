@@ -1,7 +1,7 @@
 #include "FeatureMatching.h"
 #include <limits.h>
 
-void match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match)
+void match_feature(uchar *des0, uchar *des1, float dist_threshold, int *match, int match_num[1])
 {
     DMatch matches[MAX_KEYPOINT_NUM][2];
     uchar queryDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL];
@@ -17,17 +17,18 @@ void match_feature(uchar *des0, uchar *des1, FLOAT dist_threshold, int32 *match)
 
     knnMatch(queryDescriptors, trainDescriptors, matches);
 
-    // match_size = 0;
+    int count = 0;
     match[2 * MAX_KEYPOINT_NUM];
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
         if (matches[i][0].distance <= dist_threshold * matches[i][1].distance)
         {
-            match[2 * i] = matches[i][0].queryIndex;
-            match[2 * i + 1] = matches[i][0].trainIndex;
-            // match_size++;
+            match[count * 2] = matches[i][0].queryIndex;
+            match[count * 2 + 1] = matches[i][0].trainIndex;
+            count++;
         }
     }
+    match_num[0] = count;
     return;
 }
 
@@ -38,8 +39,8 @@ void knnMatch(uchar queryDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
     const int IMGIDX_SHIFT = 18;
     const int IMGIDX_ONE = (1 << IMGIDX_SHIFT);
 
-    int32 dist[MAX_KEYPOINT_NUM][2];
-    int32 nidx[MAX_KEYPOINT_NUM][2];
+    int dist[MAX_KEYPOINT_NUM][2];
+    int nidx[MAX_KEYPOINT_NUM][2];
 
     batchDistance(queryDescriptors, trainDescriptors, dist, nidx);
 
@@ -58,8 +59,8 @@ void knnMatch(uchar queryDescriptors[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
 
 void batchDistance(uchar src1[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
                    uchar src2[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
-                   int32 dist[MAX_KEYPOINT_NUM][2],
-                   int32 nidx[MAX_KEYPOINT_NUM][2])
+                   int dist[MAX_KEYPOINT_NUM][2],
+                   int nidx[MAX_KEYPOINT_NUM][2])
 {
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
         for (int j = 0; j < 2; j++)
@@ -68,14 +69,11 @@ void batchDistance(uchar src1[MAX_KEYPOINT_NUM][DESCRIPTOR_COL],
             nidx[i][j] = -1;
         }
 
-    int32 buf[MAX_KEYPOINT_NUM];
+    int buf[MAX_KEYPOINT_NUM];
 
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
         batchDistHamming2(src1[i], src2, buf);
-
-        // since positive float's can be compared just like int's,
-        // we handle both CV_32S and CV_32F cases with a single branch
         int j, k;
 
         for (j = 0; j < MAX_KEYPOINT_NUM; j++)
@@ -108,7 +106,6 @@ void batchDistHamming2(const uchar src1[DESCRIPTOR_COL],
 
 int normHamming(const uchar a[DESCRIPTOR_COL], const uchar b[DESCRIPTOR_COL])
 {
-    const uchar *tab = popCountTable2;
     int result = 0;
     for (int i = 0; i < DESCRIPTOR_COL; i++)
     {

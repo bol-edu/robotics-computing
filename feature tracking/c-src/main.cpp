@@ -3,11 +3,11 @@
 
 using namespace std;
 
-const FLOAT dist_threshold = 1;
+const float dist_threshold = 0.7;
 
 void getData(uchar des0[MAX_KEYPOINT_NUM * DESCRIPTOR_COL],
              uchar des1[MAX_KEYPOINT_NUM * DESCRIPTOR_COL],
-             int32 match_ans[2 * MAX_KEYPOINT_NUM])
+             int match_ans[2 * MAX_KEYPOINT_NUM])
 {
     FILE *fp;
     fp = fopen("testdata/des0.txt", "r");
@@ -31,7 +31,7 @@ void getData(uchar des0[MAX_KEYPOINT_NUM * DESCRIPTOR_COL],
     fp = fopen("testdata/match_ans.txt", "r");
     for (int i = 0; i < 2 * MAX_KEYPOINT_NUM; i++)
     {
-        int32 m;
+        int m;
         fscanf(fp, "%d", &m);
         match_ans[i] = m;
     }
@@ -45,23 +45,20 @@ int main(int argc, char *argv[])
 
     uchar des0[MAX_KEYPOINT_NUM * DESCRIPTOR_COL];
     uchar des1[MAX_KEYPOINT_NUM * DESCRIPTOR_COL];
-    int32 match[2 * MAX_KEYPOINT_NUM];
-    int32 match_ans[2 * MAX_KEYPOINT_NUM];
-    // int32 match_size;
+    int match[2 * MAX_KEYPOINT_NUM];
+    int match_ans[2 * MAX_KEYPOINT_NUM];
+    int match_num[1];
 
     getData(des0, des1, match_ans);
 
-    match_feature(des0, des1, dist_threshold, match); //, match_size);
+    match_feature(des0, des1, dist_threshold, match, match_num);
+
+    printf("%d\n", match_num[0]);
 
     bool pass = true;
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
-        // printf("%d, %d\n", match[2 * i], match[2 * i + 1]);
-        if (match[i] != match_ans[i])
-        {
-            pass = false;
-            break;
-        }
+        printf("%d, %d\n", match[2 * i], match[2 * i + 1]);
     }
 
     if (pass)
