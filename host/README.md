@@ -14,7 +14,7 @@ Please refer to the [Host Interface](https://hackmd.io/jeLJ6ZYyQmuwtZx6spOqRA) f
 ## Setup Environment
 
 To set up the Vitis Vision Library Build (for U50), please follow this [guide](https://hackmd.io/3VZbNXG4T2CFOSbVs57WFQ).
-However, it's up to your discretion whether to install the libpng library or use the extracted libpng library included in the host-src folder.
+However, it's up to your discretion whether to install the libpng library or download and unzip the extracted libpng library included in the host-src folder.
 
 </br></br>
 
