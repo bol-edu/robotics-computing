@@ -63,7 +63,10 @@ However, it's on your choice to **install `libpng` library**, or just download a
      Enable **Automatically add binary container(s) to arguments**
    * Edit **Configuration** and enable **OpenCL trace**
 
-   **Note:** If you run the pure C code, please delete ``<platform-vendor>`` ``<device-name>`` arguments, and disable **Automatically add binary container(s) to aruments**
+   **Note:** 
+   * If you run the pure C code, please delete ``<platform-vendor>`` ``<device-name>`` arguments, and disable **Automatically add binary container(s) to aruments**
+   * When you run the HLS code host program, you can choose to load the ``.xclbin`` binary into FPGA directly, rather than regenerating ``.xclbin`` binary.
+      If you want to load binary directly, please disable **Automatically add binary container(s) to aruments**, and add the ``<path-to-{KERNEL}.xclbin>`` as last argument in **Program Arguments** .
    </br></br>
 
 ## Setup Host Program Behavier
