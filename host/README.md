@@ -6,7 +6,7 @@ This host code is written in C/C++ and utilizes OpenCV and OpenCL C++ Wrapper. I
 
 ## Block Diagram and Interfaces
 
-![image](https://user-images.githubusercontent.com/85032763/227933821-b6e32927-c918-4c42-a64b-2f38c047cbb5.png)
+![image](https://user-images.githubusercontent.com/85032763/236664960-c83ac98b-b4cd-43ac-ab78-eaf083f351b7.png)
 
 Please refer to the [Host Interface](https://hackmd.io/jeLJ6ZYyQmuwtZx6spOqRA) for more information.
 </br></br>
@@ -14,6 +14,7 @@ Please refer to the [Host Interface](https://hackmd.io/jeLJ6ZYyQmuwtZx6spOqRA) f
 ## Setup Environment
 
 To set up the Vitis Vision Library Build (for U50), please follow this [guide](https://hackmd.io/3VZbNXG4T2CFOSbVs57WFQ).
+However, it's on your choice to **install `libpng` library**, or just download and **use the extracted `libpng` library** in host-src.
 
 </br></br>
 
@@ -26,14 +27,25 @@ To set up the Vitis Vision Library Build (for U50), please follow this [guide](h
    Add the following includes and libraries in the **Properties**:
 
    * **C/C++ Build > Settings > Tool Setting > GCC Host Compiler(x86_64) > Includes**
-     Add the path ``<path-to-opencv-include-folder>`` to **Include paths(-l)**.
+   
+     Add the path ``<path-to-opencv-include-folder>`` to **Include paths(-l)*.
+     
+     If you have installed `libpng` library, please add the path ``<path-to-libpng-folder-where-you-installed>`` to **Include paths(-l)**.  
+     Alternatively, if you choose to use the extracted  `libpng` library, please add the path ``<path-to-libpng-folder-where-you-unzipped>`` to **Include paths(-l)**
+     
+     
    * **C/C++ Build > Settings > Tool Setting > GCC Host Linker(x86_64) > Libraries**
 
      Add the path ``<path-to-opencv-lib-folder>`` to **Library search path(-L)**.
-
-     Add the following libraries:
      
-     ``opencv_videoio`` ``opencv_imgcodecs`` ``opencv_core`` ``opencv_imgproc`` ``opencv_features2d`` ``opencv_flann`` ``opencv_video`` ``opencv_calib3d`` ``opencv_highgui``
+     If you have installed `libpng` library, please add the path ``<path-to-libpng-folder-where-you-installed>`` to **Include paths(-l)**.  
+     Alternatively, if you choose to use the extracted  `libpng` library, please add the path ``<path-to-libpng-folder-where-you-unzipped>`` to **Include paths(-l)**.
+     
+     
+     
+     Then add the following libraries:
+     
+     ``opencv_videoio`` ``opencv_imgcodecs`` ``opencv_core`` ``opencv_imgproc`` ``opencv_features2d`` ``opencv_flann`` ``opencv_video`` ``opencv_calib3d`` ``opencv_highgui`` ``png``
      
      to **Libraries(-l)**.
 5. Click the **Run** button (green button at the top panel) to add configurations
