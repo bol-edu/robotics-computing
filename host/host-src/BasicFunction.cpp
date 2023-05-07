@@ -134,15 +134,65 @@ void read_calibration(const std::string& File_Path, cv::Mat* P0, cv::Mat* P1){
 	fclose(fp);
 }
 
-void myimread(uchar* Image_Pointer, const std::string& File_Path, int Width, int Height, int Channel){
-	int Size = Width * Height;
-	std::ifstream fimg(File_Path.c_str(), std::ifstream::binary | std::ifstream::in);
-	if(!fimg){
-        std::cout << "[HOST-Error] Could not open the image: " << "'" << File_Path << "'\n";
+void myimread(const std::string& File_Path, uchar* Image_Pointer, cv::Mat* Std_Image){
+
+    FILE *fimg = fopen(File_Path.c_str(), "rb");
+    if(!fimg){
+        std::cout << "[HOST-Error] Could not open the path: " << "'" << File_Path << "'\n";
 		exit(EXIT_FAILURE);
-	}
-	fimg.read((char*)Image_Pointer, Size);
-	fimg.close();
+    }
+    // Initialize the PNG structure
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png_ptr) {
+        std::cout << "[HOST-Error] libpng failed to create PNG structure\n";
+        fclose(fimg);
+		exit(EXIT_FAILURE);
+    }
+    // Initialize the PNG info structure
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr) {
+        std::cout << "[HOST-Error] libpng failed to create PNG info structure\n";
+        fclose(fimg);
+		exit(EXIT_FAILURE);
+    }
+
+    // Set up error handling
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        std::cout << "[HOST-Error] libpng failed to set setjmp\n";
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        fclose(fimg);
+		exit(EXIT_FAILURE);
+    }
+    // Set up the input code
+    png_init_io(png_ptr, fimg);
+    png_read_info(png_ptr, info_ptr);
+
+    int width = png_get_image_width(png_ptr, info_ptr);
+    int height = png_get_image_height(png_ptr, info_ptr);
+    int row_byte = png_get_rowbytes(png_ptr, info_ptr); 
+    png_byte color_type = png_get_color_type(png_ptr, info_ptr);
+    png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+
+    // Make sure the image is grayscale with 8-bit depth
+    if (color_type != PNG_COLOR_TYPE_GRAY || bit_depth != 8) {
+        std::cout << "[HOST-Error] libpng load a not alike image\n";
+        std::cout << "color_type: " << color_type << "\n";
+        std::cout << "bit_depth: " << bit_depth << "\n";
+
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        fclose(fimg);
+		exit(EXIT_FAILURE);
+    }
+
+    png_bytep *row_pointers = new png_bytep[height];
+    for(int i=0; i<height; i++) row_pointers[i] = Image_Pointer + i*row_byte;
+
+
+    png_read_image(png_ptr, row_pointers);
+
+    free(row_pointers);
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    fclose(fimg);
 }
 
 void print_content(const std::string& File_Path, cv::Mat* Matrix) {
@@ -334,6 +384,60 @@ std::string find_binary_file(const std::string& _device_name, const std::string&
     return (xclbin_file_name);
 }
 
+
+void matwrite(const std::string& filename, cv::Mat* mat)
+{
+    std::ofstream fs(filename, std::fstream::binary);
+
+    // Header
+    int type = mat->type();
+    int channels = mat->channels();
+    fs.write((char*)&(mat->rows), sizeof(int));    // rows
+    fs.write((char*)&(mat->cols), sizeof(int));    // cols
+    fs.write((char*)&type, sizeof(int));        // type
+    fs.write((char*)&channels, sizeof(int));    // channels
+
+    // Data
+    if (mat->isContinuous())
+    {
+        fs.write(mat->ptr<char>(0), (mat->dataend - mat->datastart));
+    }
+    else
+    {
+        int rowsz = CV_ELEM_SIZE(type) * mat->cols;
+        for (int r = 0; r < mat->rows; ++r)
+        {
+            fs.write(mat->ptr<char>(r), rowsz);
+        }
+    }
+    
+}
+
+void matread(const std::string& filename, cv::Mat* mat)
+{
+    std::ifstream fs(filename, std::fstream::binary);
+
+    // Get length of file
+    fs.seekg(0, fs.end);
+    int length = fs.tellg();
+    fs.seekg(0, fs.beg);
+
+    //while (fs.tellg() < length)
+    //{
+        // Header
+        int rows, cols, type, channels;
+        fs.read((char*)&rows, sizeof(int));         // rows
+        fs.read((char*)&cols, sizeof(int));         // cols
+        fs.read((char*)&type, sizeof(int));         // type
+        fs.read((char*)&channels, sizeof(int));     // channels
+
+        // Data
+        //cv::Mat mat(rows, cols, type);
+        memset((char*)(mat->data), 0, CV_ELEM_SIZE(type) * rows * cols);
+        fs.read((char*)(mat->data), CV_ELEM_SIZE(type) * rows * cols);
+    // }
+    // return mat;
+}
 
 
 bool is_emulation() {

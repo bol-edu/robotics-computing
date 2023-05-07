@@ -79,53 +79,60 @@ int main(int argc, const char** argv) {
 		std::cout << "[HOST-Info] argv[7] XCLBIN_file        : " << xclbinFilename << endl << endl;
 	#endif
 
-	// Initial the paras and datastructures
-		int FRAME_NUM = stoi(Dataset_Frames_Num);
-		string OUTPUT_PATH(OUTPUT_FOLDER_PATH);
+	int FRAME_NUM = stoi(Dataset_Frames_Num);
+	string OUTPUT_PATH(OUTPUT_FOLDER_PATH);
 
-		cv::Mat K_Left, R_Left, T_Left;
-		cv::Mat K_Right, R_Right, T_Right;
-		cv::Mat P0, P1;
-		cv::Mat ImgLeft_0, ImgRight_0, ImgLeft_1;
-		cv::Mat Mask;
-		int height, width;
-
-
-		float* KP0 = new float[1000];
-		float* KP1 = new float[1000];
-		cv::Mat Des0(500, 32, CV_8U);
-		cv::Mat Des1(500, 32, CV_8U);
-		int* Matches = new int[1000];
-		int Detected_Matches;
-
-		cv::Mat rmat(3, 3, CV_32F);
-		cv::Mat tvec(3, 1, CV_32F);
-
-
-
-// Read calibration file
-	BasicFunction::read_calibration((const char*)Calibration_Path.c_str(), &P0, &P1);
-	#ifdef _INFO_
-		std::cout << "[HOST-Info] Read calibration successfully " << endl;
-	#endif
 // Collect all images in the given directory
 	vector<string> Img_Left_Set = BasicFunction::read_image_folder(FRAME_NUM, Input_Image_Path_1);
 	vector<string> Img_Right_Set = BasicFunction::read_image_folder(FRAME_NUM, Input_Image_Path_2);
 	#ifdef _INFO_
 		std::cout << "[HOST-Info] Read image set successfully " << endl << endl ;
 	#endif
+
 // Read the first image
 	cv::Mat Img = cv::imread(Img_Left_Set[0], cv::IMREAD_GRAYSCALE);
+	int height = Img.rows;
+	int width = Img.cols;
+	int Img_Size = height * width;
 
-// Set parameters
-	height = Img.rows;
-	width = Img.cols;
-	const size_t Img_Size = Img.rows*Img.cols*Img.channels();
-	uchar* ImgLeft_0_BUF = new uchar[Img_Size];
-	uchar* ImgRight_0_BUF = new uchar[Img_Size];
-	uchar* ImgLeft_1_BUF = new uchar[Img_Size];
+// Initial the parameters and datastructures
+
 	
-	cv::Mat Depth(height, width, CV_32F);
+	cv::Mat K_Right, R_Right, R_Left;
+	cv::Mat P0, P1;
+	float* K_Left_BUF = BasicFunction::align_allocator<float>(3*3);
+	float* T_Left_BUF = BasicFunction::align_allocator<float>(4*1);
+	float* T_Right_BUF = BasicFunction::align_allocator<float>(4*1);
+	cv::Mat K_Left(3, 3, CV_32F, K_Left_BUF);
+	cv::Mat T_Left(4, 1, CV_32F, T_Left_BUF);
+	cv::Mat T_Right(4, 1, CV_32F, T_Right_BUF);
+
+	uchar* ImgLeft_0_BUF = BasicFunction::align_allocator<uchar>(height*width);
+	uchar* ImgRight_0_BUF = BasicFunction::align_allocator<uchar>(height*width);
+	uchar* ImgLeft_1_BUF = BasicFunction::align_allocator<uchar>(height*width);
+	uchar* Mask_BUF = BasicFunction::align_allocator<uchar>(height*width);
+	float* Depth_BUF = BasicFunction::align_allocator<float>(height*width);
+	cv::Mat ImgLeft_0(height, width, CV_8U, ImgLeft_0_BUF);
+	cv::Mat ImgRight_0(height, width, CV_8U, ImgRight_0_BUF);
+	cv::Mat ImgLeft_1(height, width, CV_8U, ImgLeft_1_BUF);
+	cv::Mat Mask(height, width, CV_8U, Mask_BUF);
+	cv::Mat Depth(height, width, CV_32F, Depth_BUF);
+
+	float* KP0 = BasicFunction::align_allocator<float>(2*500);
+	float* KP1 = BasicFunction::align_allocator<float>(2*500);
+	uchar* Des0_BUF = BasicFunction::align_allocator<uchar>(32*500);
+	uchar* Des1_BUF = BasicFunction::align_allocator<uchar>(32*500);
+	cv::Mat Des0(500, 32, CV_8U, Des0_BUF);
+	cv::Mat Des1(500, 32, CV_8U, Des1_BUF);
+
+	int* Matches = BasicFunction::align_allocator<int>(2*500);
+	int* Detected_Matches = BasicFunction::align_allocator<int>(1);
+
+	float* rmat_BUF = BasicFunction::align_allocator<float>(3*3);
+	float* tvec_BUF = BasicFunction::align_allocator<float>(3*1);
+	cv::Mat rmat(3, 3, CV_32F, rmat_BUF);
+	cv::Mat tvec(3, 1, CV_32F, tvec_BUF);
+
 
 	Matrix Depth_Matrix(height, width);
 	Mask = cv::Mat::zeros(height, width, CV_8U);
@@ -135,6 +142,12 @@ int main(int argc, const char** argv) {
 	vector<cv::Mat> trajectory(FRAME_NUM);
 	cv::Rect rect(0, 0, 4, 3);
 	T_tot(rect).copyTo(trajectory[0]);
+
+// Read calibration file
+	BasicFunction::read_calibration((const char*)Calibration_Path.c_str(), &P0, &P1);
+	#ifdef _INFO_
+		std::cout << "[HOST-Info] Read calibration successfully " << endl;
+	#endif	
 
 // Decompose Projection Matrix
 	cv::decomposeProjectionMatrix(P0, K_Left, R_Left, T_Left);
@@ -225,10 +238,10 @@ int main(int argc, const char** argv) {
 			OCL_CHECK(errCode, cl::Kernel K_FeatureExtraction(Program, K_FeatureExtraction_NAME, &errCode));
 		#endif
 		#ifdef _ONLY_K_FeatureTracking_
-			OCL_CHECK(errCode, cl::Kernel K_FeatureTracking(Program, "K_FeatureTracking_NAME", &errCode));
+			OCL_CHECK(errCode, cl::Kernel K_FeatureTracking(Program, K_FeatureTracking_NAME, &errCode));
 		#endif
 		#ifdef _ONLY_K_MotionEstimation_
-			OCL_CHECK(errCode, cl::Kernel K_MotionEstimation(Program, "K_MotionEstimation_NAME", &errCode));
+			OCL_CHECK(errCode, cl::Kernel K_MotionEstimation(Program, K_MotionEstimation_NAME, &errCode));
 		#endif
 
 		// Create Buffer and Set Kernel Args
@@ -238,16 +251,16 @@ int main(int argc, const char** argv) {
 			std::cout << " --------------Create Buffer and Set Kernel Args-------------- " << endl;
 			std::cout << " ============================================================= " << endl;
 		#endif
-		#ifdef _ALL_KERNELS
+		#ifdef _ALL_KERNELS_
 			OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_0	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgLeft_0_BUF,	&errCode));
 			OCL_CHECK(errCode, cl::Buffer GlobMem_ImgRight_0(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgRight_0_BUF,  &errCode));
 			OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_1	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgLeft_1_BUF,	&errCode));
-			OCL_CHECK(errCode, cl::Buffer GlobMem_Mask		(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)Mask.data,		&errCode));
-			OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 3,		(void*)K_Left.data,		&errCode));
-			OCL_CHECK(errCode, cl::Buffer GlobMem_T_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar) * 4 * 1,		(void*)T_Left.data,		&errCode));
-			OCL_CHECK(errCode, cl::Buffer GlobMem_T_Right	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar) * 4 * 1,		(void*)T_Right.data,	&errCode));
-			OCL_CHECK(errCode, cl::Buffer GlobMem_rmat		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 3,		(void*)rmat.data,		&errCode));
-			OCL_CHECK(errCode, cl::Buffer GlobMem_tvec		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 1,		(void*)tvec.data,		&errCode));
+			OCL_CHECK(errCode, cl::Buffer GlobMem_Mask		(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)Mask_BUF,		&errCode));
+			OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 3,		(void*)K_Left_BUF,		&errCode));
+			OCL_CHECK(errCode, cl::Buffer GlobMem_T_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Left_BUF,		&errCode));
+			OCL_CHECK(errCode, cl::Buffer GlobMem_T_Right	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Right_BUF,		&errCode));
+			OCL_CHECK(errCode, cl::Buffer GlobMem_rmat		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 3,		(void*)rmat_BUF,		&errCode));
+			OCL_CHECK(errCode, cl::Buffer GlobMem_tvec		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 1,		(void*)tvec_BUF,		&errCode));
 
 			OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Depth				(Context, CL_MEM_READ_WRITE, sizeof(float)* height* width,	NULL, &errCode));
 			OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_KP0				(Context, CL_MEM_READ_WRITE, sizeof(float) * 2 * 500,		NULL, &errCode));
@@ -268,48 +281,46 @@ int main(int argc, const char** argv) {
 			// we need to setArg of K_FeatureExtraction in a loop to select which Img
 			/**
 			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(0, GlobMem_ImgLeft_0));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_ImgLeft_1));
 			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_Mask));
 			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_BUF_KP0));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(4, GlobMem_BUF_KP1));
 			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(5, GlobMem_BUF_Des0));
+
+			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_ImgLeft_1));
+			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_Mask));
+			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(4, GlobMem_BUF_KP1));
 			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(6, GlobMem_BUF_Des1));
 			*/
 
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(0, GlobMem_ImgLeft_0));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_ImgLeft_1));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_Mask));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_BUF_KP0));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(4, GlobMem_BUF_KP1));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(5, GlobMem_BUF_Des0));
-			OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(6, GlobMem_BUF_Des1));
+			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(0, GlobMem_BUF_Des0));
+			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(1, GlobMem_BUF_Des1));
+			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(2, Filter));
+			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(3, GlobMem_BUF_Matches));
+			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(4, GlobMem_BUF_Detected_Matches));
 
-			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(0, Filter));
-			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(1, GlobMem_BUF_Des0));
-			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(2, GlobMem_BUF_Des1));
-			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(4, GlobMem_BUF_Matches));
-			OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(5, GlobMem_BUF_Detected_Matches));
-
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(0, GlobMem_K_Left));
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(1, GlobMem_BUF_Depth));
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(2, GlobMem_BUF_Matches));
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(3, GlobMem_BUF_Detected_Matches));
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(4, GlobMem_BUF_KP0));
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(5, GlobMem_BUF_KP1));
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(6, GlobMem_rmat));
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, GlobMem_tvec));
-
-
-			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, GlobMem_tvec));
+			int Threshold = 64, Confidence = 0.99, Maxiter = 1000;
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(0, GlobMem_BUF_Matches));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(1, GlobMem_BUF_Detected_Matches));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(2, GlobMem_BUF_KP0));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(3, GlobMem_BUF_KP0));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(4, K_Left_BUF[0]));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(5, K_Left_BUF[2]));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(6, K_Left_BUF[4]));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, K_Left_BUF[5]));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(8, GlobMem_BUF_Depth));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(9, Threshold));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(10, Confidence));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(11, Maxiter));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(12, GlobMem_rmat));
+			OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(13, GlobMem_tvec));
 		#else
 			#ifdef _ONLY_K_StereoMatching_
 
 				OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_0 (Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgLeft_0_BUF,	&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_ImgRight_0(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgRight_0_BUF,	&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 3,		(void*)K_Left.data,		&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_T_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Left.data,		&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_T_Right	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Right.data,	&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_Depth		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float)* height* width, (void*)Depth.data, 		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 3,		(void*)K_Left_BUF,		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_T_Left	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Left_BUF,		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_T_Right	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 4 * 1,		(void*)T_Right_BUF,		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_Depth		(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float)* height* width, (float*)Depth_BUF, 		&errCode));
 
 				OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(0, GlobMem_ImgLeft_0));
 				OCL_CHECK(errCode, errCode = K_StereoMatching.setArg(1, GlobMem_ImgRight_0));
@@ -324,24 +335,25 @@ int main(int argc, const char** argv) {
 
 
 				OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_0			(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgLeft_0_BUF,	&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_1			(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgRight_0_BUF, &errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_Mask				(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)Mask.data,		&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_KP0				(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 2 * 500,		(void*)KP0,				&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_KP1				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float) * 2 * 500,		(void*)KP1,				&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_Des0				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 32 * 500,		(void*)Des0.data,		&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_Des1				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 32 * 500,		(void*)Des1.data,		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_ImgLeft_1			(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)ImgLeft_1_BUF,   &errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_Mask				(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)Mask_BUF,		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_KP0				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float) * 2 * 500,		(void*)KP0,				&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_KP1				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float) * 2 * 500,		(void*)KP1, 			&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_Des0				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 32 * 500,		(void*)Des0_BUF,		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_Des1				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 32 * 500,		(void*)Des1_BUF,		&errCode));
 
 				// Since K_FeatureExtraction process one Img and generate exactly one KP and Des
 				// we need to setArg of K_FeatureExtraction in a loop to select which Img
 				/**
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(0, GlobMem_ImgLeft_0));
+				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_Mask));
+				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_BUF_KP0));
+				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(5, GlobMem_BUF_Des0));
+
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_ImgLeft_1));
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_Mask));
-				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_KP0));
-				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(4, GlobMem_KP1));
-				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(5, GlobMem_Des0));
-				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(6, GlobMem_Des1));
-				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(7, GlobMem_Deheretected_Points));
+				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(4, GlobMem_BUF_KP1));
+				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(6, GlobMem_BUF_Des1));
 				*/
 			#endif
 			#ifdef _ONLY_K_FeatureTracking_
@@ -350,30 +362,38 @@ int main(int argc, const char** argv) {
 				OCL_CHECK(errCode, cl::Buffer GlobMem_Matches			(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(int) * 2 * 500,	(void*)Matches, 	&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_Detected_Matches	(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(int),				(void*)Detected_Matches, 	&errCode));
 
-				OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(0, Filter));
-				OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(1, GlobMem_Des0));
-				OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(2, GlobMem_Des1));
-				OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(4, GlobMem_Matches));
-				OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(5, GlobMem_Detected_Matches));
+				// OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(0, GlobMem_Des0));
+				// OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(1, GlobMem_Des1));
+				// OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(2, Filter));
+				// OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(3, GlobMem_Matches));
+				// OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(4, *Detected_Matches));
 			#endif
 			#ifdef _ONLY_K_MotionEstimation_
-				OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left 			(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 3,		(void*)K_Left.data, 	&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_Depth				(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(uchar)* height* width, (void*)Depth.data,		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_K_Left 			(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 3,		(void*)K_Left_BUF, 	&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_Depth				(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float)* height* width, (void*)Depth_BUF,		&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_Matches			(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(int) * 2 * 500,		(void*)Matches, 		&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_Detected_Matches	(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(int),					(void*)Detected_Matches,&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_KP0				(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 2 * 500,		(void*)KP0, 			&errCode));
 				OCL_CHECK(errCode, cl::Buffer GlobMem_KP1				(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(float) * 2 * 500,		(void*)KP1, 			&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_rmat				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 3,		(void*)rmat.data, 		&errCode));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_tvec				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(uchar) * 3 * 1,		(void*)tvec.data, 		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_rmat				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 3,		(void*)rmat_BUF, 		&errCode));
+				OCL_CHECK(errCode, cl::Buffer GlobMem_tvec				(Context, CL_MEM_WRITE_ONLY| CL_MEM_USE_HOST_PTR, sizeof(float) * 3 * 1,		(void*)tvec_BUF, 		&errCode));
 
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(0, GlobMem_K_Left));
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(1, GlobMem_Depth));
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(2, GlobMem_Matches));
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(3, GlobMem_Detected_Matches));
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(4, GlobMem_KP0));
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(5, GlobMem_KP1));
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(6, GlobMem_rmat));
-				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, GlobMem_tvec));
+				int Threshold = 64, Confidence = 0.99, Maxiter = 1000;
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(0, GlobMem_Matches));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(1, *Detected_Matches));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(2, GlobMem_KP0));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(3, GlobMem_KP1));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(4, K_Left_BUF[0]));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(5, K_Left_BUF[2]));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(6, K_Left_BUF[4]));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, K_Left_BUF[5]));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(8, GlobMem_Depth));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(9, Threshold));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(10, Confidence));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(11, Maxiter));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(12, GlobMem_rmat));
+				OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(13, GlobMem_tvec));
+					
 			#endif
 		#endif
 	#endif
@@ -388,9 +408,24 @@ int main(int argc, const char** argv) {
 	std::cout << " -----------------------Run Application----------------------- " << endl;
 	std::cout << " ============================================================= " << endl;
 	#endif
+#ifndef _ALL_KERNELS_
+	#ifdef _ONLY_K_FeatureExtraction_
+		cv::Mat KP0_mat(500, 2, CV_32F, KP0);
+		cv::Mat KP1_mat(500, 2, CV_32F, KP1);
+	#endif
+	#ifdef _ONLY_K_FeatureTracking_
+		cv::Mat Detected_Matches_mat(1, 1, CV_32S, Detected_Matches);
+		cv::Mat Matches_mat(500, 2, CV_32S, Matches);
+	#endif
+	#ifdef _ONLY_K_MotionEstimation_
+		cv::Mat KP0_mat(500, 2, CV_32F, KP0);
+		cv::Mat KP1_mat(500, 2, CV_32F, KP1);
+		cv::Mat Detected_Matches_mat(1, 1, CV_32S, Detected_Matches);
+		cv::Mat Matches_mat(500, 2, CV_32S, Matches);
+	#endif
+#endif
 
-
-	#ifdef _ALL_KERNELS
+	#ifdef _ALL_KERNELS_
 
 		int Num_Mem_Events = 20, Num_Exe_Events = 4;
 		vector<cl::Event> EventList(Num_Exe_Events);
@@ -399,16 +434,10 @@ int main(int argc, const char** argv) {
 		#endif
 			for (int i = 0; i < FRAME_NUM - 1; i++) {
 
-				//ImgLeft_0 = ImgLeft_1;
-				ImgLeft_0 = cv::imread(Img_Left_Set[i], cv::IMREAD_GRAYSCALE);
-				ImgRight_0 = cv::imread(Img_Right_Set[i], cv::IMREAD_GRAYSCALE);
-				ImgLeft_1 = cv::imread(Img_Left_Set[i + 1], cv::IMREAD_GRAYSCALE);
-				memcpy(ImgLeft_0_BUF, ImgLeft_0.data, Img_Size);
-				memcpy(ImgRight_0_BUF, ImgRight_0.data, Img_Size);
-				memcpy(ImgLeft_1_BUF, ImgLeft_1.data, Img_Size);
-
-
-
+			//ImgLeft_0 = ImgLeft_1;
+			BasicFunction::myimread(Img_Left_Set[i], ImgLeft_0_BUF, &Img);
+			BasicFunction::myimread(Img_Right_Set[i], ImgRight_0_BUF, &Img);
+			BasicFunction::myimread(Img_Left_Set[i + 1], ImgLeft_1_BUF, &Img);
 
 		#ifdef _INFO_
 				std::cout << endl << endl << endl << "=================== Iteration: " << i << " ==================== " << endl;
@@ -422,6 +451,11 @@ int main(int argc, const char** argv) {
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_Depth}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_StereoMatching, NULL, NULL));
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
+				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_Depth}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
+
+
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 
 
 				// K_FeatureExtraction
@@ -429,20 +463,30 @@ int main(int argc, const char** argv) {
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_Mask));
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_BUF_KP0));
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_BUF_Des0));
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_ImgLeft_0, GlobMem_Mask}, 0, NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_KP0, GlobMem_BUF_Des0}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_FeatureExtraction, NULL, &EventList[0]));
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
+				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_KP0, GlobMem_BUF_Des0}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
+
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(0, GlobMem_ImgLeft_1));
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_Mask));
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_BUF_KP1));
 				OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_BUF_Des1));
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_ImgLeft_1, GlobMem_Mask}, 0, NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_KP1, GlobMem_BUF_Des1}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_FeatureExtraction, &EventList, &EventList[1]));
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
+				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_KP1, GlobMem_BUF_Des1}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
 
+
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 
 				// K_FeatureTracking
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_Des0, GlobMem_BUF_Des1, GlobMem_BUF_Matches, GlobMem_BUF_Detected_Matches}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
@@ -457,10 +501,11 @@ int main(int argc, const char** argv) {
 
 				// K_MotionEstimation
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_K_Left, GlobMem_rmat, GlobMem_tvec}, 0, NULL, NULL));
-				OCL_CHECK(errCode, cl::Buffer GlobMem_BUF_Detected_Matches(Context, CL_MEM_READ_WRITE, sizeof(int), NULL, &errCode));
 				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_BUF_Depth, GlobMem_BUF_Matches, GlobMem_BUF_Detected_Matches, GlobMem_BUF_KP0, GlobMem_BUF_KP1}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 				OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_MotionEstimation, NULL, NULL));
+				OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
+				OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_rmat, GlobMem_tvec}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
 
 				Queue.finish();
 			}
@@ -468,14 +513,11 @@ int main(int argc, const char** argv) {
 	#else
 
 		for(int i=0; i<FRAME_NUM-1; i++){
-
+			
 			//ImgLeft_0 = ImgLeft_1;
-			ImgLeft_0 = cv::imread(Img_Left_Set[i], cv::IMREAD_GRAYSCALE);
-			ImgRight_0 = cv::imread(Img_Right_Set[i], cv::IMREAD_GRAYSCALE);
-			ImgLeft_1 = cv::imread(Img_Left_Set[i + 1], cv::IMREAD_GRAYSCALE);
-			memcpy(ImgLeft_0_BUF, ImgLeft_0.data, Img_Size);
-			memcpy(ImgRight_0_BUF, ImgRight_0.data, Img_Size);
-			memcpy(ImgLeft_1_BUF, ImgLeft_1.data, Img_Size);
+			BasicFunction::myimread(Img_Left_Set[i], ImgLeft_0_BUF, &Img);
+			BasicFunction::myimread(Img_Right_Set[i], ImgRight_0_BUF, &Img);
+			BasicFunction::myimread(Img_Left_Set[i + 1], ImgLeft_1_BUF, &Img);
 
 
 			#ifdef _INFO_
@@ -487,7 +529,6 @@ int main(int argc, const char** argv) {
 				#ifdef _INFO_
 					std::cout << "[HOST-Info] Compute Stereo Matching Using HLS..." << endl;
 				#endif
-
 					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_K_Left, GlobMem_T_Left, GlobMem_T_Right, GlobMem_ImgLeft_0, GlobMem_ImgRight_0, GlobMem_Depth}, 0, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_StereoMatching, NULL, NULL));
@@ -495,10 +536,16 @@ int main(int argc, const char** argv) {
 					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_Depth}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
 					Queue.finish();
 
+					string Depthbin_W = OUTPUT_PATH + "K_StereoMatching/Depth_iteration" + std::to_string(i) + ".bin";
+					// string Depthtxt_W = OUTPUT_PATH + "Depth_iteration" + std::to_string(i) + ".txt";
+					BasicFunction::matwrite(Depthbin_W, &Depth);
+					// BasicFunction::print_content(Depthtxt_W, &Depth);
+				
 				#ifdef _PRINT_
 					string Depth_name = OUTPUT_PATH + "K_StereoMatching/Depth_iteration" + std::to_string(i) + ".txt";
 					BasicFunction::print_content(Depth_name, &Depth);
 				#endif
+
 			#else
 				#ifdef _INFO_
 					std::cout << "[HOST-Info] Compute Stereo Matching Using C..." << endl;
@@ -510,7 +557,8 @@ int main(int argc, const char** argv) {
 					string Depth_name = OUTPUT_PATH + "C_StereoMatching/Depth_iteration" + std::to_string(i) + ".txt";
 					BasicFunction::print_content(Depth_name, &Depth);
 				#endif
-			#endif
+
+			#endif 
 
 
 
@@ -524,11 +572,13 @@ int main(int argc, const char** argv) {
 					OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_Mask));
 					OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(2, GlobMem_KP0));
 					OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(3, GlobMem_Des0));
-					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_ImgLeft_1, GlobMem_Mask, GlobMem_KP0, GlobMem_Des0}, 0, NULL, NULL));
+					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_ImgLeft_0, GlobMem_Mask, GlobMem_KP0, GlobMem_Des0}, 0, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_FeatureExtraction, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_KP0, GlobMem_Des0}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
+
+					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 
 					OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(0, GlobMem_ImgLeft_1));
 					OCL_CHECK(errCode, errCode = K_FeatureExtraction.setArg(1, GlobMem_Mask));
@@ -541,16 +591,35 @@ int main(int argc, const char** argv) {
 					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_KP1, GlobMem_Des1}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
 
 					Queue.finish();
-				#ifdef _PRINT_
-				string KP0_name = OUTPUT_PATH + "K_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".txt";
-				string KP1_name = OUTPUT_PATH + "K_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".txt";
-				string Des0_name = OUTPUT_PATH + "K_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".txt";
-				string Dea1_name = OUTPUT_PATH + "K_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".txt";
-				BasicFunction::print_content(KP0_name, KP0, 2, 500);
-				BasicFunction::print_content(KP1_name, KP1, 2, 500);
-				BasicFunction::print_content(Des0_name, &Des0);
-				BasicFunction::print_content(Dea1_name, &Des1);
-				#endif
+
+					string KP0bin_W = OUTPUT_PATH + "K_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".bin";
+					string KP1bin_W = OUTPUT_PATH + "K_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".bin";
+					string Des0bin_W = OUTPUT_PATH + "K_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".bin";
+					string Des1bin_W = OUTPUT_PATH + "K_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".bin";
+					// string KP0txt_W = OUTPUT_PATH + "K_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".txt";
+					// string KP1txt_W = OUTPUT_PATH + "K_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".txt";
+					// string Des0txt_W = OUTPUT_PATH + "K_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".txt";
+					// string Des1txt_W = OUTPUT_PATH + "K_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".txt";
+					BasicFunction::matwrite(KP0bin_W, &KP0_mat);
+					BasicFunction::matwrite(KP1bin_W, &KP1_mat);
+					BasicFunction::matwrite(Des0bin_W, &Des0);
+					BasicFunction::matwrite(Des1bin_W, &Des1);
+					// BasicFunction::print_content(KP0txt_W, &KP0_mat);
+					// BasicFunction::print_content(KP1txt_W, &KP1_mat);
+					// BasicFunction::print_content(Des0txt_W, &Des0);
+					// BasicFunction::print_content(Des1txt_W, &Des1);
+
+
+					#ifdef _PRINT_
+					string KP0_name = OUTPUT_PATH + "K_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".txt";
+					string KP1_name = OUTPUT_PATH + "K_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".txt";
+					string Des0_name = OUTPUT_PATH + "K_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".txt";
+					string Dea1_name = OUTPUT_PATH + "K_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".txt";
+					BasicFunction::print_content(KP0_name, KP0, 2, 500);
+					BasicFunction::print_content(KP1_name, KP1, 2, 500);
+					BasicFunction::print_content(Des0_name, &Des0);
+					BasicFunction::print_content(Dea1_name, &Des1);
+					#endif
 
 			#else
 
@@ -574,32 +643,50 @@ int main(int argc, const char** argv) {
 
 			#endif
 
-
-
-
 			#ifdef _ONLY_K_FeatureTracking_
 
-					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(0, Filter));
-					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(1, GlobMem_Des0));
-					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(2, GlobMem_Des1));
-					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(4, GlobMem_Matches));
-					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(5, GlobMem_Detected_Matches));
+					string Des0bin_R = OUTPUT_PATH + "K_FeatureExtraction/Des0_iteration" + std::to_string(i) + ".bin";
+					string Des1bin_R = OUTPUT_PATH + "K_FeatureExtraction/Des1_iteration" + std::to_string(i) + ".bin";
+					// string Des0txt_R = OUTPUT_PATH + "K_FeatureTracking/Des0_iteration" + std::to_string(i) + ".txt";
+					// string Des1txt_R = OUTPUT_PATH + "K_FeatureTracking/Des1_iteration" + std::to_string(i) + ".txt";
+					BasicFunction::matread(Des0bin_R, &Des0);
+					BasicFunction::matread(Des1bin_R, &Des1);
+					// BasicFunction::print_content(Des0txt_R, &Des0);
+					// BasicFunction::print_content(Des1txt_R, &Des1);
 
-					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_Des0, GlobMem_Des1, GlobMem_Matches, GlobMem_Detected_Matches}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
+					memset(Matches, 0, sizeof(int)*2*500);
+
+					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(0, GlobMem_Des0));
+					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(1, GlobMem_Des1));
+					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(2, Filter));
+					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(3, GlobMem_Matches));
+					OCL_CHECK(errCode, errCode = K_FeatureTracking.setArg(4, GlobMem_Detected_Matches));
+
+					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_Des0, GlobMem_Des1, GlobMem_Matches, GlobMem_Detected_Matches},  0, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_FeatureTracking, NULL, NULL));
-					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_Matches, GlobMem_Detected_Matches}, CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
+					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_Matches, GlobMem_Detected_Matches}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
+
 
 					Queue.finish();
 
+
+					string Detected_Matchesbin_W = OUTPUT_PATH + "K_FeatureTracking/Detected_Matches_iteration" + std::to_string(i) + ".bin";
+					// string Matchesbin_W = OUTPUT_PATH + "K_FeatureTracking/Matches_iteration" + std::to_string(i) + ".bin";
+					string Detected_Matchestxt_W = OUTPUT_PATH + "K_FeatureTracking/Detected_Matches_iteration" + std::to_string(i) + ".txt";
+					// string Matchestxt_W = OUTPUT_PATH + "K_FeatureTracking/Matches_iteration" + std::to_string(i) + ".txt";
+					BasicFunction::matwrite(Detected_Matchesbin_W, &Detected_Matches_mat);
+					// BasicFunction::matwrite(Matchesbin_W, &Matches_mat);
+					BasicFunction::print_content(Detected_Matchestxt_W, &Detected_Matches_mat);
+					// BasicFunction::print_content(Matchestxt_W, &Matches_mat);
 
 			#else
 				#ifdef _INFO_
 					std::cout << "[HOST-Info] Compute Feature Tracking Using C..." << endl;
 				#endif
-
-				match_feature(Des0.data, Des1.data, Filter, (int32*)Matches);
+									
+					match_feature(Des0.data, Des1.data, Filter, Matches, Detected_Matches);
 
 				#ifdef _PRINT_
 					string Matches_name = OUTPUT_PATH + "C_FeatureTracking/Matches_iteration" + std::to_string(i) + ".txt";
@@ -609,26 +696,53 @@ int main(int argc, const char** argv) {
 
 
 
-
 			#ifdef _ONLY_K_MotionEstimation_
 
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(0, GlobMem_K_Left));
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(1, GlobMem_Depth));
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(2, GlobMem_Matches));
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(3, GlobMem_Detected_Matches));
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(4, GlobMem_KP0));
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(5, GlobMem_KP1));
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(6, GlobMem_rmat));
-					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, GlobMem_tvec));
+					string Matchesbin_R = OUTPUT_PATH + "K_FeatureTracking/Matches_iteration" + std::to_string(i) + ".bin";
+					string Detected_Matchesbin_R = OUTPUT_PATH + "K_FeatureTracking/Detected_Matches_iteration" + std::to_string(i) + ".bin";
+					string KP0bin_R = OUTPUT_PATH + "K_FeatureExtraction/KP0_iteration" + std::to_string(i) + ".bin";
+					string KP1bin_R = OUTPUT_PATH + "K_FeatureExtraction/KP1_iteration" + std::to_string(i) + ".bin";
+					string Depthbin_R = OUTPUT_PATH + "K_StereoMatching/Depth_iteration" + std::to_string(i) + ".bin";
+					BasicFunction::matread(Matchesbin_R, &Matches_mat);
+					BasicFunction::matread(Detected_Matchesbin_R, &Detected_Matches_mat);
+					BasicFunction::matread(KP0bin_R, &KP0_mat);
+					BasicFunction::matread(KP1bin_R, &KP1_mat);
+					BasicFunction::matread(Depthbin_R, &Depth);
+
+					// int Threshold = 64, Confidence = 0.99, Maxiter = 1000;
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(0, GlobMem_Matches));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(1, *Detected_Matches));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(2, GlobMem_KP0));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(3, GlobMem_KP1));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(4, K_Left_BUF[0]));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(5, K_Left_BUF[2]));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(6, K_Left_BUF[4]));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(7, K_Left_BUF[5]));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(8, GlobMem_Depth));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(9, Threshold));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(10, Confidence));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(11, Maxiter));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(12, GlobMem_rmat));
+					OCL_CHECK(errCode, errCode = K_MotionEstimation.setArg(13, GlobMem_tvec));
 
 					// K_MotionEstimation
-					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_K_Left, GlobMem_Depth, GlobMem_Matches, GlobMem_Detected_Matches, GlobMem_KP0, GlobMem_KP1, GlobMem_rmat, GlobMem_tvec}, 0, NULL, NULL));
-					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_rmat, GlobMem_tvec}, 0, NULL, NULL));
+					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_Matches, GlobMem_KP0, GlobMem_KP1, GlobMem_Depth, GlobMem_rmat, GlobMem_tvec}, 0, NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
 					OCL_CHECK(errCode, errCode = Queue.enqueueTask(K_MotionEstimation, NULL, NULL));
+					OCL_CHECK(errCode, errCode = Queue.enqueueBarrierWithWaitList(NULL, NULL));
+					OCL_CHECK(errCode, errCode = Queue.enqueueMigrateMemObjects(cl::vector<cl::Memory>{GlobMem_rmat, GlobMem_tvec}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, NULL));
 
 					Queue.finish();
 
+
+					string rmatbin_W = OUTPUT_PATH + "K_MotionEstimation/rmat_iteration" + std::to_string(i) + ".bin";
+					string tvecbin_W = OUTPUT_PATH + "K_MotionEstimation/tvec_iteration" + std::to_string(i) + ".bin";
+					// string rmattxt_W = OUTPUT_PATH + "K_MotionEstimation/rmat_iteration" + std::to_string(i) + ".txt";
+					// string tvectxt_W = OUTPUT_PATH + "K_MotionEstimation/tvec_iteration" + std::to_string(i) + ".txt";
+					BasicFunction::matwrite(rmatbin_W, &rmat);
+					BasicFunction::matwrite(tvecbin_W, &tvec);
+					// BasicFunction::print_content(rmattxt_W, &rmat);
+					// BasicFunction::print_content(tvectxt_W, &tvec);
 
 			#else
 				#ifdef _INFO_
@@ -646,7 +760,7 @@ int main(int argc, const char** argv) {
 				Matrix rmat_Matrix(3, 3);
 				Matrix tvec_Matrix(3, 1);
 
-
+				Matches_Matrix.m = *Detected_Matches;
 				for (int r = 0; r < 500; r++) {
 					for (int c = 0; c < 2; c++) {
 						Matches_Matrix.val[r][c] = Matches[r * 2 + c];
@@ -681,9 +795,10 @@ int main(int argc, const char** argv) {
 					BasicFunction::print_content(rmat_name, &rmat);
 					BasicFunction::print_content(tvec_name, &tvec);
 				#endif
-
 			#endif
 
+			
+			
 			cv::Mat T_mat;
 			cv::Mat I4 = cv::Mat::eye(4, 4, CV_32F);
 			cv::hconcat(rmat, tvec, T_mat);
@@ -693,37 +808,42 @@ int main(int argc, const char** argv) {
 
 
 
+
 		}
 	#endif
 
-	ImgLeft_0.deallocate();
-	ImgRight_0.deallocate();
-	ImgLeft_1.deallocate();
-	Depth.deallocate();
-	Des0.deallocate();
-	Des1.deallocate();
-	rmat.deallocate();
-	tvec.deallocate();
-	delete[]KP0;
-	delete[]KP1;
-	delete[]Matches;
-	/*
+	BasicFunction::deallocate(ImgLeft_0_BUF);
+	BasicFunction::deallocate(ImgRight_0_BUF);
+	BasicFunction::deallocate(ImgLeft_1_BUF);
+	BasicFunction::deallocate(K_Left_BUF);
+	BasicFunction::deallocate(T_Left_BUF);
+	BasicFunction::deallocate(T_Right_BUF);
+	BasicFunction::deallocate(Mask_BUF);
+	BasicFunction::deallocate(Depth_BUF);
+	BasicFunction::deallocate(KP0);
+	BasicFunction::deallocate(KP1);
+	BasicFunction::deallocate(Detected_Matches);
+	BasicFunction::deallocate(Matches);
+	BasicFunction::deallocate(Des0_BUF);
+	BasicFunction::deallocate(Des1_BUF);
+	BasicFunction::deallocate(rmat_BUF);
+	BasicFunction::deallocate(tvec_BUF);
+	P0.deallocate();
+	P1.deallocate();
+	K_Right.deallocate();
+	R_Left.deallocate();
+	R_Left.deallocate();
+	
+	string trajectorytxt = OUTPUT_PATH +  "trajectory.txt";
 	ofstream fout;
-	fout.open("Output/trajectory.txt", ios::out);
+	fout.open(trajectorytxt.c_str(), ios::out);
 	for (int idx = 0; idx < FRAME_NUM - 1; idx++) {
 		fout << trajectory.at(idx).at<float>(0, 3) << "\t"
 			<< trajectory.at(idx).at<float>(1, 3) << "\t"
 			<< trajectory.at(idx).at<float>(2, 3) << endl;
 	}
 	fout.close();
-	*/
-
-
-
-
-
-
-
+	
 
 
 

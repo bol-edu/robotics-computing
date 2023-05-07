@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
-#include "AutoBuffer__.h"
-#include "Point__.h"
+//#include "AutoBuffer__.h"
+//#include "Point__.h"
 
 using namespace std;
 
@@ -31,7 +31,7 @@ using namespace std;
             fprintf_s(fpt_level, " data: %d ", extImg.at<unsigned char>(j, k));
             fprintf_s(fpt_level, " %d ", extImg.data[k + (j * imcol)]);
             //cout << image_left.at<unsigned char>(j, k) << endl;
-            /*fprintf_s(fpm, " flags: %f ", kp0.at(v).angle);
+            fprintf_s(fpm, " flags: %f ", kp0.at(v).angle);
             fprintf_s(fpm, " dims: %f ", kp0.at(v).response);
             fprintf_s(fpm, " octave: %d ", kp0.at(v).octave);
             fprintf_s(fpm, " class_id: %d ", kp0.at(v).class_id);
@@ -100,7 +100,7 @@ enum BorderTypes1 {
 int borderInterpolate_(int p, int len, int borderType)
 {
     //CV_TRACE_FUNCTION_VERBOSE();
-
+#pragma HLS PIPELINE
    // CV_DbgAssert(len > 0);
 
 #ifdef CV_STATIC_ANALYSIS
@@ -118,6 +118,9 @@ int borderInterpolate_(int p, int len, int borderType)
             return 0;
         do
         {
+#pragma HLS loop_tripcount min=0 max=1
+#pragma HLS unroll factor=1
+#pragma HLS PIPELINE
             if (p < 0)
                 p = -p - 1 + delta;
             else
@@ -153,20 +156,24 @@ void copyMakeBorder_8u(const uchar* src, size_t srcstep, Size srcroi,
     int i, j, k, elemSize = 1;
     bool intMode = false;
 
-    if ((cn | srcstep | dststep | (size_t)src | (size_t)dst) % isz == 0)
+
+   if ((cn | srcstep | dststep | (size_t)src | (size_t)dst) % isz == 0)
     {
         cn /= isz;
         elemSize = isz;
         intMode = true;
     }
 
-    AutoBuffer__<int> _tab((dstroi.width - srcroi.width) * cn);
-    int* tab = _tab.data();
+    //AutoBuffer__<int> _tab((dstroi.width - srcroi.width) * cn);
+    int _tab[64];
+    int* tab = _tab;
+
     int right = dstroi.width - srcroi.width - left;
     int bottom = dstroi.height - srcroi.height - top;
 
     for (i = 0; i < left; i++)
     {
+#pragma HLS PIPELINE
         j = borderInterpolate_(i - left, srcroi.width, borderType) * cn;
         for (k = 0; k < cn; k++)
             tab[i * cn + k] = j + k;
@@ -174,6 +181,8 @@ void copyMakeBorder_8u(const uchar* src, size_t srcstep, Size srcroi,
 
     for (i = 0; i < right; i++)
     {
+#pragma HLS PIPELINE
+#pragma HLS loop_tripcount max=32
         j = borderInterpolate_(srcroi.width + i, srcroi.width, borderType) * cn;
         for (k = 0; k < cn; k++)
             tab[(i + left) * cn + k] = j + k;
@@ -188,49 +197,74 @@ void copyMakeBorder_8u(const uchar* src, size_t srcstep, Size srcroi,
 
     for (i = 0; i < srcroi.height; i++, dstInner += dststep, src += srcstep)
     {
-        if (dstInner != src)
-            memcpy(dstInner, src, srcroi.width * elemSize);
+#pragma HLS PIPELINE
+    	//if (dstInner[0] != src[0] || dstInner[1] != src[1])
+    		if (dstInner != src)
+    		{
 
-        if (intMode)
+    		//memcpy(dstInner, src, srcroi.width * elemSize);
+
+    		for(int m = 0; m < srcroi.width * elemSize; m++){
+#pragma HLS PIPELINE
+    			dstInner[m] = src[m];}
+    		}
+
+
+      /* if (intMode)
         {
             const int* isrc = (int*)src;
             int* idstInner = (int*)dstInner;
-            for (j = 0; j < left; j++)
-                idstInner[j - left] = isrc[tab[j]];
-            for (j = 0; j < right; j++)
+            int x[32];
+             for (j = 0; j < left; j++)
+            	 	 x[j] = isrc[tab[j]];
+           for (j = 0; j < left; j++)
+            {
+            	//x = isrc[tab[j]];
+        	   (int*)dstInner[j - left] = x[j];
+            }
+           for (j = 0; j < right; j++)
                 idstInner[j + srcroi.width] = isrc[tab[j + left]];
         }
-        else
-        {
-            for (j = 0; j < left; j++)
-                dstInner[j - left] = src[tab[j]];
-            for (j = 0; j < right; j++)
-                dstInner[j + srcroi.width] = src[tab[j + left]];
-        }
+        else*/
+
+            for (j = 0; j < left; j++){
+#pragma HLS PIPELINE
+                dstInner[j - left] = src[tab[j]];}
+            for (j = 0; j < right; j++){
+#pragma HLS loop_tripcount max=32
+#pragma HLS PIPELINE
+//#pragma HLS unroll factor=32
+                dstInner[j + srcroi.width] = src[tab[j + left]];}
+
     }
 
     dstroi.width *= elemSize;
     dst += dststep * top;
 
-    for (i = 0; i < top; i++)
+  /*  for (i = 0; i < top; i++)
     {
+#pragma HLS PIPELINE off
         j = borderInterpolate_(i - top, srcroi.height, borderType);
         memcpy(dst + (i - top) * dststep, dst + j * dststep, dstroi.width);
+
     }
 
     for (i = 0; i < bottom; i++)
     {
+#pragma HLS loop_tripcount max=32
+#pragma HLS PIPELINE off
         j = borderInterpolate_(i + srcroi.height, srcroi.height, borderType);
         memcpy(dst + (i + srcroi.height) * dststep, dst + j * dststep, dstroi.width);
-    }
+    }*/
 }
 
-template <typename T> static inline
-void scalarToRawData_( T* const buf, const int cn, const int unroll_to)
+//template <typename T>
+static inline
+void scalarToRawData_( uchar* const buf, const int cn, const int unroll_to)
 {
     int i = 0;
     for (; i < cn; i++)
-        buf[i] = saturate_cast<T>(0); //buf[i] = saturate_cast<T>(s.val[i]);
+        buf[i] = saturate_cast<uchar>(0); //buf[i] = saturate_cast<T>(s.val[i]);
     for (; i < unroll_to; i++)
         buf[i] = buf[i - cn];
     
@@ -240,38 +274,11 @@ void scalarToRawData( void* _buf, int type, int unroll_to)
 {
     //CV_INSTRUMENT_REGION();
 
-    const int depth = CV_MAT_DEPTH(type), cn = CV_MAT_CN(type);
-    //CV_Assert(cn <= 4);
-    //cout << "depth " << cn << endl; 0, cn: 1
-    switch (depth)
-    {
-    case CV_8U:
-        scalarToRawData_<uchar>( (uchar*)_buf, cn, unroll_to);
-        break;
-    /*case CV_8S:
-        scalarToRawData_<schar>(s, (schar*)_buf, cn, unroll_to);
-        break;
-    case CV_16U:
-        scalarToRawData_<ushort>(s, (ushort*)_buf, cn, unroll_to);
-        break;
-    case CV_16S:
-        scalarToRawData_<short>(s, (short*)_buf, cn, unroll_to);
-        break;
-    case CV_32S:
-        scalarToRawData_<int>(s, (int*)_buf, cn, unroll_to);
-        break;
-    case CV_32F:
-        scalarToRawData_<float>(s, (float*)_buf, cn, unroll_to);
-        break;
-    case CV_64F:
-        scalarToRawData_<double>(s, (double*)_buf, cn, unroll_to);
-        break;
-    case CV_16F:
-        scalarToRawData_<float16_t>(s, (float16_t*)_buf, cn, unroll_to);
-        break;*/
-    default:
-        ;//CV_Error(CV_StsUnsupportedFormat, "");
-    }
+    const int cn = CV_MAT_CN(type);
+
+
+    scalarToRawData_( (uchar*)_buf, cn, unroll_to);
+
 }
 
 
@@ -279,11 +286,21 @@ void copyMakeConstBorder_8u(const uchar* src, size_t srcstep, Size srcroi,
     uchar* dst, size_t dststep, Size dstroi,
     int top, int left, int cn, const uchar* value)
 {
-    int i, j;
-    AutoBuffer__<uchar> _constBuf(dstroi.width * cn);
-    uchar* constBuf = _constBuf.data();
+	/*cout << "dstroi: " << dstroi.width << " " << dstroi.height << endl;
+	    cout << "srcroi: " << srcroi.width << " " << srcroi.height << endl;
+	    cout << "srcstep: " << srcstep << " " << dststep << endl;
+*/
+
+
+	    int i, j;
+    //AutoBuffer__<uchar> _constBuf(dstroi.width * cn);
+    uchar _constBuf[1305];
+    uchar* constBuf = _constBuf;
     int right = dstroi.width - srcroi.width - left;
     int bottom = dstroi.height - srcroi.height - top;
+
+   // cout << "right: " << right << " " << left << endl;
+    //    cout << "bottom: " << bottom << " " << top << endl;
 
     for (i = 0; i < dstroi.width; i++)
     {
@@ -298,6 +315,7 @@ void copyMakeConstBorder_8u(const uchar* src, size_t srcstep, Size srcroi,
 
     uchar* dstInner = dst + dststep * top + left;
 
+
     for (i = 0; i < srcroi.height; i++, dstInner += dststep, src += srcstep)
     {
         if (dstInner != src)
@@ -306,72 +324,40 @@ void copyMakeConstBorder_8u(const uchar* src, size_t srcstep, Size srcroi,
         memcpy(dstInner + srcroi.width, constBuf, right);
     }
 
+
+
     dst += dststep * top;
+
+
 
     for (i = 0; i < top; i++)
         memcpy(dst + (i - top) * dststep, constBuf, dstroi.width);
 
     for (i = 0; i < bottom; i++)
         memcpy(dst + (i + srcroi.height) * dststep, constBuf, dstroi.width);
+
+
+
+
+
+
 }
 
 void copyMakeBorder__(Mat& src, Mat& dst, int top, int bottom,
     int left, int right, int borderType )
 {
-   // CV_INSTRUMENT_REGION();
 
-    //CV_Assert(top >= 0 && bottom >= 0 && left >= 0 && right >= 0 && _src.dims() <= 2);
+   // int type = src.type();
 
-    //CV_OCL_RUN(_dst.isUMat(),
-    //    ocl_copyMakeBorder(_src, _dst, top, bottom, left, right, borderType, value))
+   // dst.data[0] = 0;
 
-    //cout << "B: " << borderType << endl;
-
-        //Mat src = _src.getMat();
-    int type = src.type();
-
-    
-    
-//cout << "top: " << src.isSubmatrix() << endl;
-    /*if (src.isSubmatrix() && (borderType & BORDER_ISOLATED_) == 0)
-    {
-        Size wholeSize;
-        Point ofs;
-        src.locateROI(wholeSize, ofs);
-        int dtop = min(ofs.y, top);
-        int dbottom = min(wholeSize.height - src.rows - ofs.y, bottom);
-        int dleft = min(ofs.x, left);
-        int dright = min(wholeSize.width - src.cols - ofs.x, right);
-        src.adjustROI(dtop, dbottom, dleft, dright);
-        top -= dtop;
-        left -= dleft;
-        bottom -= dbottom;
-        right -= dright;
-        
-    }*/
-
-    
-
-    //_dst.create(src.rows + top + bottom, src.cols + left + right, type);
-   // Mat dst = _dst.getMat();
-
-
-
-    /*if (top == 0 && left == 0 && bottom == 0 && right == 0)
-    {
-        cout << "here!!!!!!" << endl;
-        if (src.data != dst.data || src.step != dst.step)
-            src.copyTo(dst);
-        return;
-    }*/
 
     borderType &= ~BORDER_ISOLATED_;
    // cout << "borderType: " << borderType << endl;  4, 0
 
-    //CV_IPP_RUN_FAST(ipp_copyMakeBorder(src, dst, top, bottom, left, right, borderType, value))
 
-    Size src_size(src.size[1], src.size[0]);
-    Size dst_size(dst.size[1], dst.size[0]);
+    Size src_size(src.cols, src.rows);
+    Size dst_size(dst.cols, dst.rows);
 
         if (borderType != 0){     // if (borderType != BORDER_CONSTANT){
             copyMakeBorder_8u(src.ptr(), src.step[0], src_size,
@@ -384,20 +370,26 @@ void copyMakeBorder__(Mat& src, Mat& dst, int top, int bottom,
             
             //int cn = src.channels(), cn1 = cn;
             int cn = 1, cn1 = cn;
-            AutoBuffer__<double> buf(cn);
+            //AutoBuffer__<double> buf(cn);
+            double B[1];
+            double* buf = B;
             if (cn > 4)
             {
                 //CV_Assert(value[0] == value[1] && value[0] == value[2] && value[0] == value[3]);
                 cn1 = 1;
             }
-            scalarToRawData( buf.data(), CV_MAKETYPE(src.depth(), cn1), cn);
+            scalarToRawData( buf, CV_MAKETYPE(src.depth(), cn1), cn);
+
+
+
             copyMakeConstBorder_8u(src.ptr(), src.step[0], src_size,
                 dst.ptr(), dst.step[0], dst_size,
-                top, left, (int)src.elemSize(), (uchar*)buf.data());
+                top, left, (int)src.elemSize(), (uchar*)buf);
+
+
+
+
         }
-        /*if (borderType == 4)
-    {
-        outmat(dst);
-    }*/
+
 
 }

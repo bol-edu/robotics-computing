@@ -1,7 +1,7 @@
 
 //#include <limits>
 //#include <cstddef>
-#include "parallel_for__.h"
+//#include "parallel_for__.h"
 using namespace std;
 
 
@@ -40,7 +40,7 @@ thresh_8u(const Mat& _src, Mat& _dst, uchar thresh, uchar maxval, int type)
 {
     Size src_size(_src.size[1], _src.size[0]);
     Size roi = src_size;
-    roi.width *= _src.channels();
+    //roi.width *= _src.channels();
     size_t src_step = _src.step[0];
     size_t dst_step = _dst.step[0];
 
@@ -51,134 +51,12 @@ thresh_8u(const Mat& _src, Mat& _dst, uchar thresh, uchar maxval, int type)
         src_step = dst_step = roi.width;
     }
 
-/*#if defined(HAVE_IPP)
-    CV_IPP_CHECK()
-    {
-        IppiSize sz = { roi.width, roi.height };
-        CV_SUPPRESS_DEPRECATED_START
-            switch (type)
-            {
-            case THRESH_TRUNC:
-                if (_src.data == _dst.data && CV_INSTRUMENT_FUN_IPP(ippiThreshold_GT_8u_C1IR, _dst.ptr(), (int)dst_step, sz, thresh) >= 0)
-                {
-                    CV_IMPL_ADD(CV_IMPL_IPP);
-                    return;
-                }
-                if (CV_INSTRUMENT_FUN_IPP(ippiThreshold_GT_8u_C1R, _src.ptr(), (int)src_step, _dst.ptr(), (int)dst_step, sz, thresh) >= 0)
-                {
-                    CV_IMPL_ADD(CV_IMPL_IPP);
-                    return;
-                }
-                setIppErrorStatus();
-                break;
-            case THRESH_TOZERO:
-                if (_src.data == _dst.data && CV_INSTRUMENT_FUN_IPP(ippiThreshold_LTVal_8u_C1IR, _dst.ptr(), (int)dst_step, sz, thresh + 1, 0) >= 0)
-                {
-                    CV_IMPL_ADD(CV_IMPL_IPP);
-                    return;
-                }
-                if (CV_INSTRUMENT_FUN_IPP(ippiThreshold_LTVal_8u_C1R, _src.ptr(), (int)src_step, _dst.ptr(), (int)dst_step, sz, thresh + 1, 0) >= 0)
-                {
-                    CV_IMPL_ADD(CV_IMPL_IPP);
-                    return;
-                }
-                setIppErrorStatus();
-                break;
-            case THRESH_TOZERO_INV:
-                if (_src.data == _dst.data && CV_INSTRUMENT_FUN_IPP(ippiThreshold_GTVal_8u_C1IR, _dst.ptr(), (int)dst_step, sz, thresh, 0) >= 0)
-                {
-                    CV_IMPL_ADD(CV_IMPL_IPP);
-                    return;
-                }
-                if (CV_INSTRUMENT_FUN_IPP(ippiThreshold_GTVal_8u_C1R, _src.ptr(), (int)src_step, _dst.ptr(), (int)dst_step, sz, thresh, 0) >= 0)
-                {
-                    CV_IMPL_ADD(CV_IMPL_IPP);
-                    return;
-                }
-                setIppErrorStatus();
-                break;
-            }
-        CV_SUPPRESS_DEPRECATED_END
-    }
-#endif*/
+
 
     int j = 0;
     const uchar* src = _src.ptr();
     uchar* dst = _dst.ptr();
-/*#if CV_SIMD
-    v_uint8 thresh_u = vx_setall_u8(thresh);
-    v_uint8 maxval16 = vx_setall_u8(maxval);
 
-    switch (type)
-    {
-    case THRESH_BINARY:
-        for (int i = 0; i < roi.height; i++, src += src_step, dst += dst_step)
-        {
-            for (j = 0; j <= roi.width - v_uint8::nlanes; j += v_uint8::nlanes)
-            {
-                v_uint8 v0;
-                v0 = vx_load(src + j);
-                v0 = thresh_u < v0;
-                v0 = v0 & maxval16;
-                v_store(dst + j, v0);
-            }
-        }
-        break;
-
-    case THRESH_BINARY_INV:
-        for (int i = 0; i < roi.height; i++, src += src_step, dst += dst_step)
-        {
-            for (j = 0; j <= roi.width - v_uint8::nlanes; j += v_uint8::nlanes)
-            {
-                v_uint8 v0;
-                v0 = vx_load(src + j);
-                v0 = v0 <= thresh_u;
-                v0 = v0 & maxval16;
-                v_store(dst + j, v0);
-            }
-        }
-        break;
-
-    case THRESH_TRUNC:
-        for (int i = 0; i < roi.height; i++, src += src_step, dst += dst_step)
-        {
-            for (j = 0; j <= roi.width - v_uint8::nlanes; j += v_uint8::nlanes)
-            {
-                v_uint8 v0;
-                v0 = vx_load(src + j);
-                v0 = v0 - (v0 - thresh_u);
-                v_store(dst + j, v0);
-            }
-        }
-        break;
-
-    case THRESH_TOZERO:
-        for (int i = 0; i < roi.height; i++, src += src_step, dst += dst_step)
-        {
-            for (j = 0; j <= roi.width - v_uint8::nlanes; j += v_uint8::nlanes)
-            {
-                v_uint8 v0;
-                v0 = vx_load(src + j);
-                v0 = (thresh_u < v0) & v0;
-                v_store(dst + j, v0);
-            }
-        }
-        break;
-
-    case THRESH_TOZERO_INV:
-        for (int i = 0; i < roi.height; i++, src += src_step, dst += dst_step)
-        {
-            for (j = 0; j <= roi.width - v_uint8::nlanes; j += v_uint8::nlanes)
-            {
-                v_uint8 v0;
-                v0 = vx_load(src + j);
-                v0 = (v0 <= thresh_u) & v0;
-                v_store(dst + j, v0);
-            }
-        }
-        break;
-    }
-#endif*/
 
     int j_scalar = j;
     if (j_scalar < roi.width)
@@ -224,8 +102,10 @@ thresh_8u(const Mat& _src, Mat& _dst, uchar thresh, uchar maxval, int type)
         dst = _dst.ptr();
         for (int i = 0; i < roi.height; i++, src += src_step, dst += dst_step)
         {
+//#pragma HLS loop_tripcount max=313
+#pragma HLS PIPELINE
             j = j_scalar;
-#if CV_ENABLE_UNROLLED
+/*#if CV_ENABLE_UNROLLED
             for (; j <= roi.width - 4; j += 4)
             {
                 uchar t0 = tab[src[j]];
@@ -240,70 +120,18 @@ thresh_8u(const Mat& _src, Mat& _dst, uchar thresh, uchar maxval, int type)
                 dst[j + 2] = t0;
                 dst[j + 3] = t1;
             }
-#endif
-            for (; j < roi.width; j++)
-                dst[j] = tab[src[j]];
+#endif*/
+            for (; j < roi.width; j++){
+//#pragma HLS loop_tripcount max=1034
+#pragma HLS PIPELINE
+#pragma HLS unroll factor=4
+                dst[j] = tab[src[j]];}
         }
     }
 }
 
 
 
-class ThresholdRunner : public ParallelLoopBody_
-{
-public:
-    ThresholdRunner(Mat src, Mat dst, double _thresh, double _maxval, int _thresholdType)
-    {
-        //src = _src;
-        //dst = _dst;
-
-        thresh = _thresh;
-        maxval = _maxval;
-        thresholdType = _thresholdType;
-    }
-
-    void operator () (const Range& range) const CV_OVERRIDE
-    {
-        int row0 = range.start;
-        int row1 = range.end;
-
-        Mat srcStripe = src;//.rowRange(row0, row1);
-        Mat dstStripe = dst;// .rowRange(row0, row1);
-
-        /*CALL_HAL(threshold, cv_hal_threshold, srcStripe.data, srcStripe.step, dstStripe.data, dstStripe.step,
-            srcStripe.cols, srcStripe.rows, srcStripe.depth(), srcStripe.channels(),
-            thresh, maxval, thresholdType);*/
-       // cout << "ssdep: " << srcStripe.depth() << endl;  0
-        if (srcStripe.depth() == CV_8U)
-        {
-            thresh_8u(srcStripe, dstStripe, (uchar)thresh, (uchar)maxval, thresholdType);
-        }
-        /*else if (srcStripe.depth() == CV_16S)
-        {
-            thresh_16s(srcStripe, dstStripe, (short)thresh, (short)maxval, thresholdType);
-        }
-        else if (srcStripe.depth() == CV_16U)
-        {
-            thresh_16u(srcStripe, dstStripe, (ushort)thresh, (ushort)maxval, thresholdType);
-        }
-        else if (srcStripe.depth() == CV_32F)
-        {
-            thresh_32f(srcStripe, dstStripe, (float)thresh, (float)maxval, thresholdType);
-        }
-        else if (srcStripe.depth() == CV_64F)
-        {
-            thresh_64f(srcStripe, dstStripe, thresh, maxval, thresholdType);
-        }*/
-    }
-
-private:
-    Mat src;
-    Mat dst;
-
-    double thresh;
-    double maxval;
-    int thresholdType;
-};
 
 
 
@@ -320,28 +148,14 @@ double threshold__(Mat src, Mat& dst, double thresh, double maxval, int type)
     int automatic_thresh = (type & ~CV_THRESH_MASK);
     type &= THRESH_MASK_;
    
-    /*CV_Assert(automatic_thresh != (CV_THRESH_OTSU | CV_THRESH_TRIANGLE));
-    if (automatic_thresh == CV_THRESH_OTSU)
-    {
-        cout << "THRESH_O" << endl;
-        int src_type = src.type();
-        CV_CheckType(src_type, src_type == CV_8UC1 || src_type == CV_16UC1, "THRESH_OTSU mode");
-        thresh = src.type() == CV_8UC1 ? getThreshVal_Otsu_8u(src)
-            : getThreshVal_Otsu_16u(src);
-    }
-    else if (automatic_thresh == CV_THRESH_TRIANGLE)
-    {
-        cout << "THRESH_T" << endl;
-        CV_Assert(src.type() == CV_8UC1);
-        thresh = getThreshVal_Triangle_8u(src);
-    }*/
+
 
     //_dst.create(src.size(), src.type());
    // Mat dst = _dst.getMat();
 
     //cout << " dep: " << src.depth() << endl; == 0
 
-    if (src.depth() == 0)  // if (src.depth() == CV_8U)  (src.depth() : 0)
+  //  if (src.depth() == 0)  // if (src.depth() == CV_8U)  (src.depth() : 0)
     {
         int ithresh = cvFloor(thresh);
         thresh = ithresh;
@@ -352,7 +166,7 @@ double threshold__(Mat src, Mat& dst, double thresh, double maxval, int type)
 
         if (ithresh < 0 || ithresh >= 255)
         {
-            cout << "In threshold__.h: ithresh < 0 || ithresh >= 255" << endl;
+            //cout << "In threshold__.h: ithresh < 0 || ithresh >= 255" << endl;
             /*if (type == THRESH_BINARY_ || type == THRESH_BINARY_INV_ ||
                 ((type == THRESH_TRUNC_ || type == THRESH_TOZERO_INV_) && ithresh < 0) ||
                 (type == THRESH_TOZERO_ && ithresh >= 255))
@@ -367,77 +181,40 @@ double threshold__(Mat src, Mat& dst, double thresh, double maxval, int type)
             return thresh;*/
         }
 
-        // CV_OVX_RUN(!ovx::skipSmallImages<VX_KERNEL_THRESHOLD>(src.cols, src.rows),
-         //    openvx_threshold(src, dst, ithresh, imaxval, type), (double)ithresh)
+
 
         thresh = ithresh;
         maxval = imaxval;
     }
-    /*else if (src.depth() == CV_16S)
-    {
-        int ithresh = cvFloor(thresh);
-        thresh = ithresh;
-        int imaxval = cvRound(maxval);
-        if (type == THRESH_TRUNC)
-            imaxval = ithresh;
-        imaxval = saturate_cast<short>(imaxval);
 
-        if (ithresh < SHRT_MIN || ithresh >= SHRT_MAX)
-        {
-            if (type == THRESH_BINARY || type == THRESH_BINARY_INV ||
-                ((type == THRESH_TRUNC || type == THRESH_TOZERO_INV) && ithresh < SHRT_MIN) ||
-                (type == THRESH_TOZERO && ithresh >= SHRT_MAX))
-            {
-                int v = type == THRESH_BINARY ? (ithresh >= SHRT_MAX ? 0 : imaxval) :
-                    type == THRESH_BINARY_INV ? (ithresh >= SHRT_MAX ? imaxval : 0) :
-                    0;
-                dst.setTo(v);
-            }
-            else
-                src.copyTo(dst);
-            return thresh;
-        }
-        thresh = ithresh;
-        maxval = imaxval;
-    }
-    else if (src.depth() == CV_16U)
-    {
-        int ithresh = cvFloor(thresh);
-        thresh = ithresh;
-        int imaxval = cvRound(maxval);
-        if (type == THRESH_TRUNC)
-            imaxval = ithresh;
-        imaxval = saturate_cast<ushort>(imaxval);
-
-        int ushrt_min = 0;
-        if (ithresh < ushrt_min || ithresh >= (int)USHRT_MAX)
-        {
-            if (type == THRESH_BINARY || type == THRESH_BINARY_INV ||
-                ((type == THRESH_TRUNC || type == THRESH_TOZERO_INV) && ithresh < ushrt_min) ||
-                (type == THRESH_TOZERO && ithresh >= (int)USHRT_MAX))
-            {
-                int v = type == THRESH_BINARY ? (ithresh >= (int)USHRT_MAX ? 0 : imaxval) :
-                    type == THRESH_BINARY_INV ? (ithresh >= (int)USHRT_MAX ? imaxval : 0) :
-                    0;
-                dst.setTo(v);
-            }
-            else
-                src.copyTo(dst);
-            return thresh;
-        }
-        thresh = ithresh;
-        maxval = imaxval;
-    }*/
-    else if (src.depth() == 5)
+ /*   else if (src.depth() == 5)
         ;
     else if (src.depth() == 6)
         ;
     else
         //CV_Error(CV_StsUnsupportedFormat, "");
-        ;
+        ;*/
 
-    parallel_for__(Range(0, dst.rows),
-        ThresholdRunner(src, dst, thresh, maxval, type),
-        dst.total() / (double)(1 << 16));
+    Range range = Range(0, dst.rows);
+
+
+            int row0 = range.start;
+            int row1 = range.end;
+
+            Mat srcStripe = src;//.rowRange(row0, row1);
+            Mat dstStripe = dst;// .rowRange(row0, row1);
+
+
+           // cout << "ssdep: " << srcStripe.depth() << endl;  0
+           // if (srcStripe.depth() == CV_8U)
+           // {
+                thresh_8u(srcStripe, dstStripe, (uchar)thresh, (uchar)maxval, type);
+           // }
+
+
+
+   // parallel_for__(Range(0, dst.rows),
+    //    ThresholdRunner(src, dst, thresh, maxval, type),
+    //    dst.total() / (double)(1 << 16));
     return thresh;
 }

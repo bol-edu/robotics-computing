@@ -63,6 +63,8 @@ public:
     */
      static float overlap(const KeyPoint& kp1, const KeyPoint& kp2);
 
+     void clear();
+
      Point2f_ pt; //!< coordinates of the keypoints
      float size; //!< diameter of the meaningful keypoint neighborhood
      float angle; //!< computed orientation of the keypoint (-1 if not applicable);
@@ -85,3 +87,19 @@ KeyPoint::KeyPoint(Point2f_ _pt, float _size, float _angle, float _response, int
 inline
 KeyPoint::KeyPoint(float x, float y, float _size, float _angle, float _response, int _octave, int _class_id)
     : pt(x, y), size(_size), angle(_angle), response(_response), octave(_octave), class_id(_class_id) {}
+
+
+inline void KeyPoint::clear()
+{
+    pt.x = pt.y = 0;
+    size = 0;
+    angle = -1;
+    response = 0;
+    octave = 0;
+    class_id = -1;
+
+
+}
+
+
+

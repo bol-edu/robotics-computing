@@ -14,8 +14,8 @@
 //#include "define.h"
 #include "saturate_cast.h"
 #include "Range.h"
-#include "AutoBuffer__.h"
-#include "parallel_for__.h"
+//#include "AutoBuffer__.h"
+//#include "parallel_for__.h"
 //#include <opencv2/opencv.hpp>
 using namespace std;
 //using namespace cv;
@@ -1575,322 +1575,57 @@ public:
             }
         }
     };*/
-    template <typename ET, typename FT, int n, bool mulall, int cncnt>
+    /*template <typename ET, typename FT, int n, bool mulall, int cncnt>
     static void hlineResizeCn(ET* src, int cn, int* ofst, FT* m, FT* dst, int dst_min, int dst_max, int dst_width)
     {
         hline<ET, FT, n, mulall, cncnt>::ResizeCn(src, cn, ofst, m, dst, dst_min, dst_max, dst_width);
     };
 
-    template <>
-    void hlineResizeCn<uint8_t, ufixedpoint16, 2, true, 1>(uint8_t* src, int, int* ofst, ufixedpoint16* m, ufixedpoint16* dst, int dst_min, int dst_max, int dst_width)
+    template <><uint8_t, ufixedpoint16, 2, true, 1>*/
+    void hlineResizeCn(uint8_t* src, int nouse, int* ofst, ufixedpoint16* m, ufixedpoint16* dst, int dst_min, int dst_max, int dst_width)
     {
+#pragma HLS PIPELINE
         int i = 0;
-        ufixedpoint16 src_0(src[0]);
-#if CV_SIMD
-        const int VECSZ = v_uint16::nlanes;
-        v_uint16 v_src_0 = vx_setall_u16(*((uint16_t*)&src_0));
-        for (; i <= dst_min - VECSZ; i += VECSZ, m += 2 * VECSZ, dst += VECSZ) // Points that fall left from src image so became equal to leftmost src point
+       ufixedpoint16 src_0(src[0]);
+       /*uchar* srcof = src + ofst[dst_width - 1];
+                //uchar srcdata = srcof[0];
+                ufixedpoint16 src_1(srcof[0]);*/
+
+
+
+
+       // int counter = dst_min + dst_max;
+                //dst[i] = src_1;
+     /*   for (; i < dst_min; i++, m += 2)
         {
-            v_store((uint16_t*)dst, v_src_0);
-        }
-#endif
-        for (; i < dst_min; i++, m += 2)
+#pragma HLS PIPELINE
+            dst[i] = src_0;
+        }*/
+
+         for (; i < dst_max; i += 1, m += 2)
         {
-            *(dst++) = src_0;
-        }
-#if CV_SIMD
-        for (; i <= dst_max - 2 * VECSZ; i += 2 * VECSZ, m += 4 * VECSZ, dst += 2 * VECSZ)
-        {
-            v_uint16 v_src0, v_src1;
-            v_expand(vx_lut_pairs(src, ofst + i), v_src0, v_src1);
-            v_store((uint16_t*)dst, v_pack(v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src0), vx_load((int16_t*)m))),
-                v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src1), vx_load((int16_t*)m + VECSZ)))));
-            v_expand(vx_lut_pairs(src, ofst + i + VECSZ), v_src0, v_src1);
-            v_store((uint16_t*)dst + VECSZ, v_pack(v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src0), vx_load((int16_t*)m + 2 * VECSZ))),
-                v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src1), vx_load((int16_t*)m + 3 * VECSZ)))));
-        }
-        if (i <= dst_max - VECSZ)
-        {
-            v_uint16 v_src0, v_src1;
-            v_expand(vx_lut_pairs(src, ofst + i), v_src0, v_src1);
-            v_store((uint16_t*)dst, v_pack(v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src0), vx_load((int16_t*)m))),
-                v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src1), vx_load((int16_t*)m + VECSZ)))));
-            i += VECSZ; m += 2 * VECSZ; dst += VECSZ;
-        }
-#endif
-        for (; i < dst_max; i += 1, m += 2)
-        {
+#pragma HLS loop_tripcount min=346 max=1034
+#pragma HLS PIPELINE
+#pragma HLS unroll factor=100
             uint8_t* px = src + ofst[i];
-            *(dst++) = m[0] * px[0] + m[1] * px[1];
+            dst[i] = m[0] * px[0] + m[1] * px[1];
+
         }
-        src_0 = (src + ofst[dst_width - 1])[0];
-#if CV_SIMD
-        v_src_0 = vx_setall_u16(*((uint16_t*)&src_0));
-        for (; i <= dst_width - VECSZ; i += VECSZ, dst += VECSZ) // Points that fall left from src image so became equal to leftmost src point
+
+      //   uchar* srcof = src + ofst[dst_width - 1];
+        //         src_0 = srcof[0];
+
+
+       /*  for (; i < dst_width; i++)
         {
-            v_store((uint16_t*)dst, v_src_0);
-        }
-#endif
-        for (; i < dst_width; i++)
-        {
-            *(dst++) = src_0;
-        }
+#pragma HLS PIPELINE
+        	dst[i] = src_0;
+
+
+        }*/
     }
 
-    /*
-    template <>
-    void hlineResizeCn<uint8_t, ufixedpoint16, 2, true, 2>(uint8_t* src, int, int* ofst, ufixedpoint16* m, ufixedpoint16* dst, int dst_min, int dst_max, int dst_width)
-    {
-        int i = 0;
-        union {
-            uint32_t d;
-            uint16_t w[2];
-        } srccn;
-        ((ufixedpoint16*)(srccn.w))[0] = src[0];
-        ((ufixedpoint16*)(srccn.w))[1] = src[1];
-#if CV_SIMD
-        const int VECSZ = v_uint16::nlanes;
-        v_uint16 v_srccn = v_reinterpret_as_u16(vx_setall_u32(srccn.d));
-        for (; i <= dst_min - VECSZ / 2; i += VECSZ / 2, m += VECSZ, dst += VECSZ) // Points that fall left from src image so became equal to leftmost src point
-        {
-            v_store((uint16_t*)dst, v_srccn);
-        }
-#endif
-        for (; i < dst_min; i++, m += 2)
-        {
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[0];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[1];
-        }
-#if CV_SIMD
-        for (; i <= dst_max - VECSZ / 2; i += VECSZ / 2, m += VECSZ, dst += VECSZ)
-        {
-            v_uint16 v_src0, v_src1;
-            v_expand(v_interleave_pairs(v_reinterpret_as_u8(vx_lut_pairs((uint16_t*)src, ofst + i))), v_src0, v_src1);
 
-            v_uint32 v_mul = vx_load((uint32_t*)m);//AaBbCcDd
-            v_uint32 v_zip0, v_zip1;
-            v_zip(v_mul, v_mul, v_zip0, v_zip1);//AaAaBbBb CcCcDdDd
-            v_uint32 v_res0 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src0), v_reinterpret_as_s16(v_zip0)));
-            v_uint32 v_res1 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src1), v_reinterpret_as_s16(v_zip1)));
-            v_store((uint16_t*)dst, v_pack(v_res0, v_res1));//AB1AB2CD1CD2
-        }
-#endif
-        for (; i < dst_max; i += 1, m += 2)
-        {
-            uint8_t* px = src + 2 * ofst[i];
-            *(dst++) = m[0] * px[0] + m[1] * px[2];
-            *(dst++) = m[0] * px[1] + m[1] * px[3];
-        }
-        ((ufixedpoint16*)(srccn.w))[0] = (src + 2 * ofst[dst_width - 1])[0]; ((ufixedpoint16*)(srccn.w))[1] = (src + 2 * ofst[dst_width - 1])[1];
-#if CV_SIMD
-        v_srccn = v_reinterpret_as_u16(vx_setall_u32(srccn.d));
-        for (; i <= dst_width - VECSZ / 2; i += VECSZ / 2, dst += VECSZ) // Points that fall left from src image so became equal to leftmost src point
-        {
-            v_store((uint16_t*)dst, v_srccn);
-        }
-#endif
-        for (; i < dst_width; i++)
-        {
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[0];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[1];
-        }
-    }
-    template <>
-    void hlineResizeCn<uint8_t, ufixedpoint16, 2, true, 3>(uint8_t* src, int, int* ofst, ufixedpoint16* m, ufixedpoint16* dst, int dst_min, int dst_max, int dst_width)
-    {
-        int i = 0;
-        union {
-            uint64_t q;
-            uint16_t w[4];
-        } srccn;
-        ((ufixedpoint16*)(srccn.w))[0] = src[0];
-        ((ufixedpoint16*)(srccn.w))[1] = src[1];
-        ((ufixedpoint16*)(srccn.w))[2] = src[2];
-        ((ufixedpoint16*)(srccn.w))[3] = 0;
-#if CV_SIMD
-        const int VECSZ = v_uint16::nlanes;
-        v_uint16 v_srccn = v_pack_triplets(v_reinterpret_as_u16(vx_setall_u64(srccn.q)));
-        for (; i <= dst_min - (VECSZ + 2) / 3; i += VECSZ / 4, m += VECSZ / 2, dst += 3 * VECSZ / 4) // Points that fall left from src image so became equal to leftmost src point
-        {
-            v_store((uint16_t*)dst, v_srccn);
-        }
-#endif
-        for (; i < dst_min; i++, m += 2)
-        {
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[0];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[1];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[2];
-        }
-#if CV_SIMD
-        CV_DECL_ALIGNED(CV_SIMD_WIDTH) int ofst3[VECSZ / 2];
-        for (; i <= dst_max - (3 * VECSZ / 4 + (VECSZ + 2) / 3); i += VECSZ / 2, m += VECSZ, dst += 3 * VECSZ / 2)
-        {
-            v_store(ofst3, vx_load(ofst + i) * vx_setall_s32(3));
-            v_uint8 v_src01, v_src23;
-            v_uint16 v_src0, v_src1, v_src2, v_src3;
-            v_zip(vx_lut_quads(src, ofst3), v_reinterpret_as_u8(v_reinterpret_as_u32(vx_lut_quads(src + 2, ofst3)) >> 8), v_src01, v_src23);
-            v_expand(v_src01, v_src0, v_src1);
-            v_expand(v_src23, v_src2, v_src3);
-
-            v_uint32 v_mul0, v_mul1, v_mul2, v_mul3, v_tmp;
-            v_mul0 = vx_load((uint32_t*)m);//AaBbCcDd
-            v_zip(v_mul0, v_mul0, v_mul3, v_tmp);//AaAaBbBb CcCcDdDd
-            v_zip(v_mul3, v_mul3, v_mul0, v_mul1);//AaAaAaAa BbBbBbBb
-            v_zip(v_tmp, v_tmp, v_mul2, v_mul3);//CcCcCcCc DdDdDdDd
-
-            v_uint32 v_res0 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src0), v_reinterpret_as_s16(v_mul0)));
-            v_uint32 v_res1 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src1), v_reinterpret_as_s16(v_mul1)));
-            v_uint32 v_res2 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src2), v_reinterpret_as_s16(v_mul2)));
-            v_uint32 v_res3 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src3), v_reinterpret_as_s16(v_mul3)));
-            v_store((uint16_t*)dst, v_pack_triplets(v_pack(v_res0, v_res1)));
-            v_store((uint16_t*)dst + 3 * VECSZ / 4, v_pack_triplets(v_pack(v_res2, v_res3)));
-        }
-#endif
-        for (; i < dst_max; i += 1, m += 2)
-        {
-            uint8_t* px = src + 3 * ofst[i];
-            *(dst++) = m[0] * px[0] + m[1] * px[3];
-            *(dst++) = m[0] * px[1] + m[1] * px[4];
-            *(dst++) = m[0] * px[2] + m[1] * px[5];
-        }
-        ((ufixedpoint16*)(srccn.w))[0] = (src + 3 * ofst[dst_width - 1])[0];
-        ((ufixedpoint16*)(srccn.w))[1] = (src + 3 * ofst[dst_width - 1])[1];
-        ((ufixedpoint16*)(srccn.w))[2] = (src + 3 * ofst[dst_width - 1])[2];
-#if CV_SIMD
-        v_srccn = v_pack_triplets(v_reinterpret_as_u16(vx_setall_u64(srccn.q)));
-        for (; i <= dst_width - (VECSZ + 2) / 3; i += VECSZ / 4, dst += 3 * VECSZ / 4) // Points that fall right from src image so became equal to rightmost src point
-        {
-            v_store((uint16_t*)dst, v_srccn);
-        }
-#endif
-        for (; i < dst_width; i++)
-        {
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[0];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[1];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[2];
-        }
-    }
-    template <>
-    void hlineResizeCn<uint8_t, ufixedpoint16, 2, true, 4>(uint8_t* src, int, int* ofst, ufixedpoint16* m, ufixedpoint16* dst, int dst_min, int dst_max, int dst_width)
-    {
-        int i = 0;
-        union {
-            uint64_t q;
-            uint16_t w[4];
-        } srccn;
-        ((ufixedpoint16*)(srccn.w))[0] = src[0];
-        ((ufixedpoint16*)(srccn.w))[1] = src[1];
-        ((ufixedpoint16*)(srccn.w))[2] = src[2];
-        ((ufixedpoint16*)(srccn.w))[3] = src[3];
-#if CV_SIMD
-        const int VECSZ = v_uint16::nlanes;
-        v_uint16 v_srccn = v_reinterpret_as_u16(vx_setall_u64(srccn.q));
-        for (; i <= dst_min - VECSZ / 4; i += VECSZ / 4, m += VECSZ / 2, dst += VECSZ) // Points that fall left from src image so became equal to leftmost src point
-        {
-            v_store((uint16_t*)dst, v_srccn);
-        }
-#endif
-        for (; i < dst_min; i++, m += 2)
-        {
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[0];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[1];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[2];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[3];
-        }
-#if CV_SIMD
-        for (; i <= dst_max - VECSZ / 2; i += VECSZ / 2, m += VECSZ, dst += 2 * VECSZ)
-        {
-            v_uint16 v_src0, v_src1, v_src2, v_src3;
-            v_expand(v_interleave_quads(v_reinterpret_as_u8(vx_lut_pairs((uint32_t*)src, ofst + i))), v_src0, v_src1);
-            v_expand(v_interleave_quads(v_reinterpret_as_u8(vx_lut_pairs((uint32_t*)src, ofst + i + VECSZ / 4))), v_src2, v_src3);
-
-            v_uint32 v_mul0, v_mul1, v_mul2, v_mul3, v_tmp;
-            v_mul0 = vx_load((uint32_t*)m);//AaBbCcDd
-            v_zip(v_mul0, v_mul0, v_mul3, v_tmp);//AaAaBbBb CcCcDdDd
-            v_zip(v_mul3, v_mul3, v_mul0, v_mul1);//AaAaAaAa BbBbBbBb
-            v_zip(v_tmp, v_tmp, v_mul2, v_mul3);//CcCcCcCc DdDdDdDd
-
-            v_uint32 v_res0 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src0), v_reinterpret_as_s16(v_mul0)));
-            v_uint32 v_res1 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src1), v_reinterpret_as_s16(v_mul1)));
-            v_uint32 v_res2 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src2), v_reinterpret_as_s16(v_mul2)));
-            v_uint32 v_res3 = v_reinterpret_as_u32(v_dotprod(v_reinterpret_as_s16(v_src3), v_reinterpret_as_s16(v_mul3)));
-            v_store((uint16_t*)dst, v_pack(v_res0, v_res1));
-            v_store((uint16_t*)dst + VECSZ, v_pack(v_res2, v_res3));
-        }
-#endif
-        for (; i < dst_max; i += 1, m += 2)
-        {
-            uint8_t* px = src + 4 * ofst[i];
-            *(dst++) = m[0] * px[0] + m[1] * px[4];
-            *(dst++) = m[0] * px[1] + m[1] * px[5];
-            *(dst++) = m[0] * px[2] + m[1] * px[6];
-            *(dst++) = m[0] * px[3] + m[1] * px[7];
-        }
-        ((ufixedpoint16*)(srccn.w))[0] = (src + 4 * ofst[dst_width - 1])[0]; ((ufixedpoint16*)(srccn.w))[1] = (src + 4 * ofst[dst_width - 1])[1];
-        ((ufixedpoint16*)(srccn.w))[2] = (src + 4 * ofst[dst_width - 1])[2]; ((ufixedpoint16*)(srccn.w))[3] = (src + 4 * ofst[dst_width - 1])[3];
-#if CV_SIMD
-        v_srccn = v_reinterpret_as_u16(vx_setall_u64(srccn.q));
-        for (; i <= dst_width - VECSZ / 4; i += VECSZ / 4, dst += VECSZ) // Points that fall right from src image so became equal to rightmost src point
-        {
-            v_store((uint16_t*)dst, v_srccn);
-        }
-#endif
-        for (; i < dst_width; i++)
-        {
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[0];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[1];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[2];
-            *(dst++) = ((ufixedpoint16*)(srccn.w))[3];
-        }
-    }
-    template <>
-    void hlineResizeCn<uint16_t, ufixedpoint32, 2, true, 1>(uint16_t* src, int, int* ofst, ufixedpoint32* m, ufixedpoint32* dst, int dst_min, int dst_max, int dst_width)
-    {
-        int i = 0;
-        ufixedpoint32 src_0(src[0]);
-#if CV_SIMD
-        const int VECSZ = v_uint32::nlanes;
-        v_uint32 v_src_0 = vx_setall_u32(*((uint32_t*)&src_0));
-        for (; i <= dst_min - VECSZ; i += VECSZ, m += 2 * VECSZ, dst += VECSZ) // Points that fall left from src image so became equal to leftmost src point
-        {
-            v_store((uint32_t*)dst, v_src_0);
-        }
-#endif
-        for (; i < dst_min; i++, m += 2)
-        {
-            *(dst++) = src_0;
-        }
-#if CV_SIMD
-        for (; i <= dst_max - VECSZ; i += VECSZ, m += 2 * VECSZ, dst += VECSZ)
-        {
-            v_uint32 v_src0, v_src1;
-            v_expand(vx_lut_pairs(src, ofst + i), v_src0, v_src1);
-
-            v_uint64 v_res0 = v_reinterpret_as_u64(v_src0 * vx_load((uint32_t*)m));
-            v_uint64 v_res1 = v_reinterpret_as_u64(v_src1 * vx_load((uint32_t*)m + VECSZ));
-            v_store((uint32_t*)dst, v_pack((v_res0 & vx_setall_u64(0xFFFFFFFF)) + (v_res0 >> 32),
-                (v_res1 & vx_setall_u64(0xFFFFFFFF)) + (v_res1 >> 32)));
-        }
-#endif
-        for (; i < dst_max; i += 1, m += 2)
-        {
-            uint16_t* px = src + ofst[i];
-            *(dst++) = m[0] * px[0] + m[1] * px[1];
-        }
-        src_0 = (src + ofst[dst_width - 1])[0];
-#if CV_SIMD
-        v_src_0 = vx_setall_u32(*((uint32_t*)&src_0));
-        for (; i <= dst_width - VECSZ; i += VECSZ, dst += VECSZ)
-        {
-            v_store((uint32_t*)dst, v_src_0);
-        }
-#endif
-        for (; i < dst_width; i++)
-        {
-            *(dst++) = src_0;
-        }
-    }
-*/
 
     template <typename ET, typename FT>
     void vlineSet(FT* src, ET* dst, int dst_width)
@@ -1898,29 +1633,29 @@ public:
         for (int i = 0; i < dst_width; i++)
             dst[i] = src[i];
     }
-    template <>
+    /*template <>
     void vlineSet<uint8_t, ufixedpoint16>(ufixedpoint16* src, uint8_t* dst, int dst_width)
     {
         int i = 0;
-#if CV_SIMD
-        const int VECSZ = v_uint8::nlanes;
-        static const v_uint16 v_fixedRound = vx_setall_u16((uint16_t)((1U << 8) >> 1));
-        for (; i <= dst_width - VECSZ; i += VECSZ, src += VECSZ, dst += VECSZ)
-        {
-            v_uint16 v_src0 = vx_load((uint16_t*)src);
-            v_uint16 v_src1 = vx_load((uint16_t*)src + VECSZ / 2);
 
-            v_uint16 v_res0 = (v_src0 + v_fixedRound) >> 8;
-            v_uint16 v_res1 = (v_src1 + v_fixedRound) >> 8;
-
-            v_store(dst, v_pack(v_res0, v_res1));
-        }
-#endif
         for (; i < dst_width; i++)
-            *(dst++) = *(src++);
+        	dst[i] = src[i];
+    }*/
+
+void vlineResize(ufixedpoint16* src, size_t src_step, ufixedpoint16* m, uint8_t* dst, int dst_width)
+    {
+        // cout << "vlineResize" << endl;
+        for (int i = 0; i < dst_width; i++)
+        {
+            typename ufixedpoint16::WT res = src[i] * m[0];
+            for (int k = 1; k < 2; k++)
+                res = res + src[i + k * src_step] * m[k];
+            dst[i] = res;
+        }
     }
 
-    template <typename ET, typename FT, int n>
+
+   /* template <typename ET, typename FT, int n>
     void vlineResize(FT* src, size_t src_step, FT* m, ET* dst, int dst_width)
     {
         for (int i = 0; i < dst_width; i++)
@@ -1936,52 +1671,23 @@ public:
     {
         int i = 0;
         ufixedpoint16* src1 = src + src_step;
-#if CV_SIMD
-        const int VECSZ = v_uint8::nlanes;
-        static const v_int32 v_fixedRound = vx_setall_s32((int32_t)((1 << 16) >> 1));
-        static const v_int16 v_128 = v_reinterpret_as_s16(vx_setall_u16((uint16_t)1 << 15));
-        static const v_int8  v_128_16 = v_reinterpret_as_s8(vx_setall_u8((uint8_t)1 << 7));
 
-        v_int16 v_mul = v_reinterpret_as_s16(vx_setall_u32(((uint32_t*)m)[0]));
-        for (; i <= dst_width - VECSZ; i += VECSZ, src += VECSZ, src1 += VECSZ, dst += VECSZ)
-        {
-            v_int16 v_src00 = vx_load((int16_t*)src);
-            v_int16 v_src10 = vx_load((int16_t*)src1);
-            v_int16 v_tmp0, v_tmp1;
-            v_zip(v_add_wrap(v_src00, v_128), v_add_wrap(v_src10, v_128), v_tmp0, v_tmp1);
-
-            v_int32 v_res0 = v_dotprod(v_tmp0, v_mul);
-            v_int32 v_res1 = v_dotprod(v_tmp1, v_mul);
-
-            v_int16 v_src01 = vx_load((int16_t*)src + VECSZ / 2);
-            v_int16 v_src11 = vx_load((int16_t*)src1 + VECSZ / 2);
-            v_zip(v_add_wrap(v_src01, v_128), v_add_wrap(v_src11, v_128), v_tmp0, v_tmp1);
-            v_int32 v_res2 = v_dotprod(v_tmp0, v_mul);
-            v_int32 v_res3 = v_dotprod(v_tmp1, v_mul);
-
-            v_int8 v_res = v_pack(v_pack((v_res0 + v_fixedRound) >> 16,
-                (v_res1 + v_fixedRound) >> 16),
-                v_pack((v_res2 + v_fixedRound) >> 16,
-                    (v_res3 + v_fixedRound) >> 16));
-
-            v_store(dst, v_reinterpret_as_u8(v_sub_wrap(v_res, v_128_16)));
-        }
-#endif
         for (; i < dst_width; i++)
         {
             *(dst++) = (uint8_t)(*(src++) * m[0] + *(src1++) * m[1]);
         }
-    }
+    }*/
 
-    template <typename ET> class interpolationLinear
+    //template <typename ET>
+    class interpolationLinear
     {
     public:
         static const int len = 2;
         static const bool needsign = false;
         interpolationLinear(double inv_scale, int srcsize, int dstsize) : scale(softdouble::one() / softdouble(inv_scale)), maxsize(srcsize), minofst(0), maxofst(dstsize) {}
-        void getCoeffs(int val, int* offset, typename fixedtype<ET, needsign>::type* coeffs)
+        void getCoeffs(int val, int* offset, ufixedpoint16* coeffs)
         {
-            typedef typename fixedtype<ET, needsign>::type fixedpoint;
+            //typedef typename fixedtype<ET, needsign>::type fixedpoint;
             softdouble fval = scale * (softdouble(val) + softdouble(0.5)) - softdouble(0.5);
             int ival = cvFloor(fval);
             if (ival >= 0 && maxsize > 1)
@@ -1990,7 +1696,7 @@ public:
                 {
                     *offset = ival;
                     coeffs[1] = fval - softdouble(ival);
-                    coeffs[0] = fixedpoint::one() - coeffs[1];
+                    coeffs[0] = ufixedpoint16::one() - coeffs[1];
                 }
                 else
                 {
@@ -2014,7 +1720,7 @@ public:
         int minofst, maxofst;
     };
 
-    template <typename ET, typename FT, int interp_y_len>
+   /* template <typename ET, typename FT, int interp_y_len>
     class resize_bitExactInvoker :
         public ParallelLoopBody_
     {
@@ -2071,9 +1777,7 @@ public:
                 hResize((ET*)(src + (src_height - 1) * src_step), cn, xoffsets, xcoeffs, endline, min_x, max_x, dst_width);
             for (; dy < range.end; dy++)
                 vlineSet<ET, FT>(endline, (ET*)(dst + dst_step * dy), dst_width * cn);
-#if CV_SIMD
-            vx_cleanup();
-#endif
+
         }
 
     private:
@@ -2090,15 +1794,15 @@ public:
 
         resize_bitExactInvoker(const resize_bitExactInvoker&);
         resize_bitExactInvoker& operator=(const resize_bitExactInvoker&);
-    };
+    };*/
 
-    template <typename ET, typename interpolation>
+    //template <typename ET, typename interpolation>
     void resize_bitExact(const uchar* src, size_t src_step, int src_width, int src_height,
         uchar* dst, size_t dst_step, int dst_width, int dst_height,
         int cn, double inv_scale_x, double inv_scale_y)
     {
-        typedef typename fixedtype<ET, false>::type fixedpoint;
-        void(*hResize)(ET * src, int cn, int* ofst, fixedpoint * m, fixedpoint * dst, int dst_min, int dst_max, int dst_width);
+        //typedef typename fixedtype<ET, false>::type fixedpoint;
+        /*void(*hResize)(ET * src, int cn, int* ofst, fixedpoint * m, fixedpoint * dst, int dst_min, int dst_max, int dst_width);
         //cout << "src_width : " << src_width<<endl;fixedShift
        // cout << "fixed : " << fixedpoint.fixedShift << endl;
         switch (cn)
@@ -2108,42 +1812,237 @@ public:
         case  3: hResize = src_width > 2 ? hlineResizeCn<ET, fixedpoint, 2, true, 3> : hlineResizeCn<ET, fixedpoint, 2, false, 3>; break;
         case  4: hResize = src_width > 2 ? hlineResizeCn<ET, fixedpoint, 2, true, 4> : hlineResizeCn<ET, fixedpoint, 2, false, 4>; break;
         default: hResize = src_width > 2 ? hlineResize<ET, fixedpoint, 2, true> : hlineResize<ET, fixedpoint, 2, false>; break;
-        }
+        }*/
         //cout << "cn: " << cn << ", src_width: " << src_width << endl;
 
-        interpolation interp_x(inv_scale_x, src_width, dst_width);
-        interpolation interp_y(inv_scale_y, src_height, dst_height);
+        interpolationLinear interp_x(inv_scale_x, src_width, dst_width);
+        interpolationLinear interp_y(inv_scale_y, src_height, dst_height);
 
-        AutoBuffer__<uchar> buf(dst_width * sizeof(int) +
-            dst_height * sizeof(int) +
-            dst_width * interp_x.len * sizeof(fixedpoint) +
-            dst_height * interp_y.len * sizeof(fixedpoint));
-        int* xoffsets = (int*)buf.data();
+
+
+        static unsigned char buf[12776];
+
+        int* xoffsets = (int*)buf;
         int* yoffsets = xoffsets + dst_width;
-        fixedpoint* xcoeffs = (fixedpoint*)(yoffsets + dst_height);
-        fixedpoint* ycoeffs = xcoeffs + dst_width * interp_x.len;
+        ufixedpoint16* xcoeffs = (ufixedpoint16*)(yoffsets + dst_height);
+        ufixedpoint16* ycoeffs = xcoeffs + dst_width * interp_x.len;
 
         int min_x, max_x, min_y, max_y;
         for (int dx = 0; dx < dst_width; dx++)
-            interp_x.getCoeffs(dx, xoffsets + dx, xcoeffs + dx * interp_x.len);
+            {
+#pragma HLS PIPELINE
+        		interp_x.getCoeffs(dx, xoffsets + dx, xcoeffs + dx * interp_x.len);
+            }
         interp_x.getMinMax(min_x, max_x);
         for (int dy = 0; dy < dst_height; dy++)
-            interp_y.getCoeffs(dy, yoffsets + dy, ycoeffs + dy * interp_y.len);
+            {
+#pragma HLS PIPELINE
+        		interp_y.getCoeffs(dy, yoffsets + dy, ycoeffs + dy * interp_y.len);
+            }
         interp_y.getMinMax(min_y, max_y);
 
 
-       
 
 
-        resize_bitExactInvoker<ET, fixedpoint, interpolation::len> invoker(src, src_step, src_width, src_height, dst, dst_step, dst_width, dst_height, cn,
-            xoffsets, yoffsets, xcoeffs, ycoeffs, min_x, max_x, min_y, max_y, hResize);
+
+       // resize_bitExactInvoker<ET, fixedpoint, interpolation::len> invoker(src, src_step, src_width, src_height, dst, dst_step, dst_width, dst_height, cn,
+        //    xoffsets, yoffsets, xcoeffs, ycoeffs, min_x, max_x, min_y, max_y, hResize);
         Range range(0, dst_height);
-        parallel_for__(range, invoker, dst_width * dst_height / (double)(1 << 16));
+
+        static const int interp_y_len = 2;
+                //   cout << "Using" << endl;
+                   //AutoBuffer__<fixedpoint> linebuf(interp_y_len * dst_width * cn);
+                   //cout << " size: " << interp_y_len * dst_width * cn << endl;
+         ufixedpoint16 LB[2068];
+        ufixedpoint16* linebuf;
+                linebuf = LB;
+
+          /*      unsigned short LBN[2068];
+                unsigned short* lbn = LBN;
+
+                for (int idx = 0; idx < 2068; idx++){
+                	#pragma HLS PIPELINE
+                	linebuf[idx] = 0;
+                }*/
+
+                //linebuf[0] = 0;
+                //lbn[1] = 0;
+
+                //ufixedpoint32 temp = linebuf[0] ;
+        // unsigned int temp3 =(temp.raw() + ((1 << 16) >> 1)) >> 16;
+    // unsigned int temp2 = min ( temp3, (unsigned int)UCHAR_MAX);
+           //     uchar* srch1 = (uchar*)src;
+          //   dst[0]  = srch1[0];
+
+                   int last_eval = -interp_y_len;
+                   int evalbuf_start = 0;
+                   int rmin_y = max(min_y, range.start);   //cout << "rmin_y: " << rmin_y << endl; 0
+                   int rmax_y = min(max_y, range.end);     //cout << "max_y: " << max_y << endl; //change
+
+                  // uchar* srch1 = (uchar*)src;
+              /*     uchar tes = 0;
+                  ufixedpoint16 src_0t(tes);
+                   for (int i = 0; i < min_x; i++)
+                     {
+
+                             linebuf[i] = src_0t;
+
+                     }*/
+
+                   if (range.start < min_y)
+                   {
+                       last_eval = 1 - interp_y_len;
+                       evalbuf_start = 1;
+                       hlineResizeCn((uchar*)src, cn, xoffsets, xcoeffs, linebuf, min_x, max_x, dst_width);
+                       /*{
+                                           uchar* srch = (uchar*)src;
+                                           int i = 0;
+                                           ufixedpoint16 src_0(srch[0]);
+                                           ufixedpoint16* m = xcoeffs;
+
+                                           //cout << "dst_min: " << dst_min << endl;
+											//#pragma HLS UNROLL factor=4
+                                           for (; i < min_x; i++, m += 2)
+                                           {
+
+                                               linebuf[i] = src_0;
+
+                                           }
+
+                                           for (; i < max_x; i += 1, m += 2)
+                                           {
+                                               uint8_t* px = srch + xoffsets[i];
+                                               linebuf[i] = m[0] * px[0] + m[1] * px[1];
+                                           }
+                                            uchar* srcof = srch + xoffsets[dst_width - 1];
+                                           src_0 = srcof[0];
+
+                                          for (; i < dst_width; i++)
+                                           {
+                                               linebuf[i] = src_0;
+                                           }
+                         }*/
+
+                   }
+
+
+                   int dy = range.start;
+                  // unsigned char* dstnew = (dst + dst_step * dy);
+                   for (; dy < rmin_y; dy++)
+                       ;// cout << "Error: In resize1.h, use vlineSet" << endl;
+                       //vlineSet<unsigned char, fixedpoint>(linebuf, dstnew, dst_width * cn);
+                   //cout << "dy1: " << dy << endl;
+                  for (; dy < rmax_y; dy++)
+                   {
+#pragma HLS PIPELINE
+                       int& iy = yoffsets[dy];
+
+                       int i;
+                       for (i = max(iy, last_eval + interp_y_len); i < min(iy + interp_y_len, src_height); i++, evalbuf_start = (evalbuf_start + 1) % interp_y_len){
+#pragma HLS unroll factor=2
+#pragma HLS PIPELINE
+                    	//   hlineResizeCn((uchar*)(src + i * src_step), cn, xoffsets, xcoeffs, linebuf + evalbuf_start * (dst_width * cn), min_x, max_x, dst_width);
+                      // }
+                    	   //{
+
+                                           uchar* srch = (uchar*)(src + i * src_step);
+                                           int counter = 0;
+                                           ufixedpoint16 src_0(srch[0]);
+                                           ufixedpoint16* m = xcoeffs;
+                                           ufixedpoint16* linebufh = linebuf + evalbuf_start * (dst_width * cn);
+
+                                           //cout << "dst_min: " << dst_min << endl;
+
+                                           for (; counter < min_x; counter++, m += 2)
+                                           {
+#pragma HLS PIPELINE
+#pragma HLS unroll factor=1
+                                               linebufh[counter] = src_0;
+
+                                           }
+
+                                           for (; counter < max_x; counter += 1, m += 2)
+                                           {
+#pragma HLS PIPELINE
+#pragma HLS unroll factor=2
+                                               uint8_t* px = srch + xoffsets[counter];
+                                               linebufh[counter] = m[0] * px[0] + m[1] * px[1];
+                                           }
+                                           uchar* srcof = srch + xoffsets[dst_width - 1];
+                                           src_0 = srcof[0];
+
+
+                                           for (; counter < dst_width; counter++)
+                                           {
+#pragma HLS PIPELINE
+#pragma HLS unroll factor=1
+                                               linebufh[counter] = src_0;
+                                           }
+                       }
+
+
+
+
+
+
+                       evalbuf_start = (evalbuf_start + max(iy, src_height - interp_y_len) - max(last_eval, src_height - interp_y_len)) % interp_y_len;
+                       last_eval = iy;
+
+                       ufixedpoint16 curcoeffs[interp_y_len];
+                       for (i = 0; i < evalbuf_start; i++){
+#pragma HLS PIPELINE off
+                    	   int temp = dy * interp_y_len - evalbuf_start + interp_y_len + i;
+                           curcoeffs[i] = ycoeffs[temp];}
+                       for (; i < interp_y_len; i++){
+#pragma HLS loop_tripcount min=1 max=2
+#pragma HLS unroll factor=2
+#pragma HLS PIPELINE off
+                    	   int idx = dy * interp_y_len - evalbuf_start + i;
+                           curcoeffs[i] = ycoeffs[idx];}
+
+                       //vlineResize<ET, ufixedpoint16, interp_y_len>(linebuf, dst_width * cn, curcoeffs, (ET*)(dst + dst_step * dy), dst_width * cn);
+                     // vlineResize(linebuf, dst_width * cn, curcoeffs, (dst + dst_step * dy), dst_width * cn);
+
+                       unsigned char* dstV = (dst + dst_step * dy);
+
+                       size_t src_step = (size_t)(dst_width * cn);
+                       unsigned char dstVbuf[1034];
+                                      for (int i = 0; i < dst_width; i++)
+                                      {
+#pragma HLS PIPELINE
+                                    	  ufixedpoint32 res = linebuf[i] * curcoeffs[0];
+                                          for (int k = 1; k < 2; k++)
+                                          {
+#pragma HLS unroll
+                                              res = res + linebuf[i + k * src_step] * curcoeffs[k];
+                                          }
+
+                                          //uchar dstVbuf = saturate_cast<uchar>((res.raw() + ((1 << 16) >> 1)) >> 16);
+                                          //dstV[i] = dstVbuf;//
+                                          unsigned int ibuf = min(((res.raw() + ((1 << 16) >> 1)) >> 16), (unsigned)UCHAR_MAX);
+                                          dstV[i] = res;
+
+                                      }
+                                     // for (int i = 0; i < dst_width; i++)
+                                      //      dstV[i] = dstVbuf[i];
+
+                   }
+                   ufixedpoint16* endline = linebuf;
+                   //cout << "dy2: " << dy << endl;
+                   if (last_eval + interp_y_len > src_height)
+                       endline += dst_width * cn * ((evalbuf_start + src_height - 1 - last_eval) % interp_y_len);
+                   else
+                	   hlineResizeCn((uchar*)(src + (src_height - 1) * src_step), cn, xoffsets, xcoeffs, endline, min_x, max_x, dst_width);
+                  // for (; dy < range.end; dy++)
+                   //    vlineSet<ET, ufixedpoint16>(endline, (ET*)(dst + dst_step * dy), dst_width * cn);
+
+
+
+
+        //parallel_for__(range, invoker, dst_width * dst_height / (double)(1 << 16));*/
     }
 
-    typedef void(*be_resize_func)(const uchar* src, size_t src_step, int src_width, int src_height,
-        uchar* dst, size_t dst_step, int dst_width, int dst_height,
-        int cn, double inv_scale_x, double inv_scale_y);
+
 
 //}
 
@@ -2177,10 +2076,10 @@ public:
 
  
 
-    typedef void (*ResizeFunc)(const Mat& src, Mat& dst,
+    /*typedef void (*ResizeFunc)(const Mat& src, Mat& dst,
         const int* xofs, const void* alpha,
         const int* yofs, const void* beta,
-        int xmin, int xmax, int ksize);
+        int xmin, int xmax, int ksize);*/
 
     /*typedef void (*ResizeAreaFastFunc)(const Mat& src, Mat& dst,
         const int* ofs, const int* xofs,
@@ -2220,57 +2119,53 @@ public:
             //CALL_HAL(resize_, cv_hal_resize, src_type, src_data, src_step, src_width, src_height, dst_data, dst_step, dst_width, dst_height, inv_scale_x, inv_scale_y, interpolation);
 
            // int  depth = CV_MAT_DEPTH(src_type), cn = CV_MAT_CN(src_type);
-            int  depth = ((src_type) & ((1 << 3) - 1)), cn = ((((src_type) & (511 << 3)) >> 3) + 1) ; //cout << "cn : " << cn << endl; d:0
-            Size dsize = Size(saturate_cast<int>(src_width * inv_scale_x),
-                saturate_cast<int>(src_height * inv_scale_y));
+            //int  depth = ((src_type) & ((1 << 3) - 1)), cn = ((((src_type) & (511 << 3)) >> 3) + 1) ; //cout << "cn : " << cn << endl; d:0
+          int cn = 1;
+        	//  Size dsize = Size(saturate_cast<int>(src_width * inv_scale_x),
+           //     saturate_cast<int>(src_height * inv_scale_y));
            
-             
+            //dst_data[0] = 0;
 
-            static be_resize_func linear_exact_tab[] =
-            {
-                resize_bitExact<uchar, interpolationLinear<unsigned char> >,
-                //resize_bitExact<schar, interpolationLinear<signed char> >,
-                //resize_bitExact<ushort, interpolationLinear<unsigned short> >,
-                resize_bitExact<short, interpolationLinear<short> >,
-                resize_bitExact<int, interpolationLinear<int> >,
-                0,
-                0,
-                0
-            };
 
-            double scale_x = 1. / inv_scale_x, scale_y = 1. / inv_scale_y;
 
-            int iscale_x = saturate_cast<int>(scale_x);
-            int iscale_y = saturate_cast<int>(scale_y);
+           // double scale_x = 1. / inv_scale_x, scale_y = 1. / inv_scale_y;
 
-            bool is_area_fast = std::abs(scale_x - iscale_x) < DBL_EPSILON &&
-                std::abs(scale_y - iscale_y) < DBL_EPSILON;
+          //  int iscale_x = saturate_cast<int>(scale_x);
+           // int iscale_y = saturate_cast<int>(scale_y);
 
-            Mat src(Size(src_width, src_height), src_type, const_cast<uchar*>(src_data), src_step);
-            Mat dst(dsize, src_type, dst_data, dst_step);
+          //  bool is_area_fast = std::abs(scale_x - iscale_x) < DBL_EPSILON &&
+          //      std::abs(scale_y - iscale_y) < DBL_EPSILON;
 
-            if (interpolation == INTER_LINEAR_EXACT)
-            {
+           // Mat src(Size(src_width, src_height), src_type, const_cast<uchar*>(src_data), src_step);
+            //Mat dst(dsize, src_type, dst_data, dst_step);
+
+            //if (interpolation == INTER_LINEAR_EXACT)
+            //{
                // cout << "INTER_LINEAR_EXACT" << endl;
                 // in case of inv_scale_x && inv_scale_y is equal to 0.5
                 // INTER_AREA (fast) is equal to bit exact INTER_LINEAR
-                if (is_area_fast && iscale_x == 2 && iscale_y == 2 && cn != 2)//Area resize implementation for 2-channel images isn't bit-exact
-                {
+                //if (is_area_fast && iscale_x == 2 && iscale_y == 2 && cn != 2)//Area resize implementation for 2-channel images isn't bit-exact
+             //   {
                     //cout << "INTER_AREA" << endl;
-                    interpolation = INTER_AREA;
-                }
-                else
+                //    interpolation = INTER_AREA;
+              //  }
+               // else
                 {
-                    be_resize_func func = linear_exact_tab[depth];
+                    /*be_resize_func func = linear_exact_tab[depth];
                     //CV_Assert(func != 0);
                     func(src_data, src_step, src_width, src_height,
                         dst_data, dst_step, dst_width, dst_height,
-                        cn, inv_scale_x, inv_scale_y);
+                        cn, inv_scale_x, inv_scale_y);*/
+
+                   resize_bitExact(src_data, src_step, src_width, src_height,
+                                            dst_data, dst_step, dst_width, dst_height,
+                                            cn, inv_scale_x, inv_scale_y);
+                   //uchar test = dst_data[0];
                    
                     return;
                 }
-            }
-            cout << "here!!" << endl;
+           // }
+            //cout << "here!!" << endl;
             /*
             if (interpolation == INTER_NEAREST)
             {
@@ -2298,7 +2193,7 @@ public:
 
                 // true "area" interpolation is only implemented for the case (scale_x >= 1 && scale_y >= 1).
                 // In other cases it is emulated using some variant of bilinear interpolation
-                /*if (interpolation == INTER_AREA && scale_x >= 1 && scale_y >= 1)
+                if (interpolation == INTER_AREA && scale_x >= 1 && scale_y >= 1)
                 {
                     cout << "INTER_AREA" << endl;
                     if (is_area_fast)
@@ -2360,7 +2255,7 @@ public:
             ResizeFunc func = 0;
             int ksize = 0, ksize2;
            // cout << "interpolation : " << interpolation << endl;
-           /* if (interpolation == INTER_CUBIC)
+            if (interpolation == INTER_CUBIC)
                 ksize = 4, func = cubic_tab[depth];
             else if (interpolation == INTER_LANCZOS4)
                 ksize = 8, func = lanczos4_tab[depth];
@@ -2491,7 +2386,8 @@ void resize__(Mat& src, Mat& dst, Size dsize,
     double inv_scale_x, double inv_scale_y, int interpolation)
 {
 
-    Size src_size(src.size[1], src.size[0]);
+	dst.data[0] = 0;
+	Size src_size(src.cols, src.rows);
     Size ssize = src_size;
 
 
@@ -2510,27 +2406,15 @@ void resize__(Mat& src, Mat& dst, Size dsize,
     }
     //cout << "empty: " << (dsize.empty()) << endl;
 
-    if (interpolation == INTER_LINEAR_EXACT && (src.depth() == CV_32F || src.depth() == CV_64F))
-        interpolation = INTER_LINEAR; // If depth isn't supported fallback to generic resize
+  //  if (interpolation == INTER_LINEAR_EXACT && (src.depth() == CV_32F || src.depth() == CV_64F))
+    //    interpolation = INTER_LINEAR; // If depth isn't supported fallback to generic resize
    // cout << "interpolation: " << interpolation << endl;
 
     
 
-   // Mat src = _src.getMat();
-    //_dst.create(dsize, src.type());
-    //Mat dst = _dst.getMat();
-
-    /*if (dsize == ssize)
-    {
-        // Source and destination are of same size. Use simple copy.
-        //cout << "copyTo" << endl;
-        src.copyTo(dst);
-        return;
-    }*/
-
    
-    resize_(src.type(), src.data, src.step[0], src.cols, src.rows, dst.data, dst.step[0], dst.cols, dst.rows, inv_scale_x, inv_scale_y, interpolation);
-   // cout << "step :" << dst.step.buf[0] <<" , " << dst.step.buf[1] << endl;
+    resize_(0/*src.type()*/, src.data, src.step[0], src.cols, src.rows, dst.data, dst.step[0], dst.cols, dst.rows, inv_scale_x, inv_scale_y, interpolation);
+
 }
 
 

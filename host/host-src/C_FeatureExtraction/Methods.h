@@ -42,5 +42,5 @@ using namespace std;
 #define FLANN 0
 
 
-
-void extract_features(unsigned char* image_data, unsigned char* mask_data, float* kp_xy, unsigned char* des_data);
+extern "C"{
+void extract_features(unsigned char* image_data, unsigned char* mask_data, float* kp_xy, unsigned char* des_data);}

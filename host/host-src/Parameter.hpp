@@ -16,7 +16,7 @@
  *  |   |   |- K_MotionEstimation
  *  |   \   \- K_StereoMatching
  *  |      
- *  |- Output  
+ *  |- output  
  *  |   |- C_FeatureExtraction  
  *  |   |- C_FeatureTracking
  *  |   |- C_MotionEstimation
@@ -76,7 +76,7 @@
  * The default mode is `_ALL_KERNELS_` + `_INFO_` + `_PRINT_`
  */
 
-#define _ONLY_K_FeatureExtraction_
+#define _ALL_KERNELS_
 #define _INFO_
 #define _PRINT_
 
@@ -110,11 +110,23 @@
  * 
  * 
  */
-#define Filter 1
+float Filter = 0.8;
 
-#define K_StereoMatching_NAME "stereo_2_depth"
+#define K_StereoMatching_NAME "top_function"
 #define K_FeatureExtraction_NAME "extract_features"
-#define K_FeatureTracking_NAME "K_FeatureTracking"
-#define K_MotionEstimation_NAME "K_MotionEstimation"
-#define OUTPUT_FOLDER_PATH "/home/chngh/Desktop/Host/Output/"
+#define K_FeatureTracking_NAME "match_feature"
+#define K_MotionEstimation_NAME "estimate_motion"
+#define OUTPUT_FOLDER_PATH "/mnt/HLSNAS/04.fFRbPc/Host/output/"
 //===============================Parameter Section END===============================
+
+
+
+
+
+//=============================DO NOT MODIFY BELOW CODE==============================
+#ifdef _ALL_KERNELS_
+#define _ONLY_K_StereoMatching_
+#define _ONLY_K_FeatureExtraction_
+#define _ONLY_K_FeatureTracking_
+#define _ONLY_K_MotionEstimation_
+#endif

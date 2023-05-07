@@ -1,5 +1,4 @@
 
-
 #include <stdlib.h>
 #include <iostream>
 
@@ -358,7 +357,7 @@ public:
     //MatSize size;
     //MatStep step;
     size_t step[2];
-    int* size;
+    int size[2];
 
 protected:
     //template<typename _Tp, typename Functor> void forEach_impl(const Functor& operation);
@@ -367,10 +366,12 @@ protected:
 //---------------------------------------------------------------------------------------------
 
 Mat_S::Mat_S()
-    : flags(MAGIC_VAL), dims(0), rows(0), cols(0), data(0), size(&rows)//, step(0)
+    : flags(MAGIC_VAL), dims(0), rows(0), cols(0), data(0)//, step(0)
 {
     step[0] = 0;
     step[1] = 0;
+    size[0] = rows;
+    size[1] = cols;
 }
 
 inline
@@ -471,4 +472,3 @@ void Mat_S::create_ones()
         data[i * 4 + 3] = 63;
     }
 }
-

@@ -2,11 +2,9 @@
 # include <stdio.h>
 # include <iostream>
 # include <stdlib.h>
-# include <vector>
 #include <string.h>
 #include <math.h>
 #include <algorithm>
-//#include "Mat.h"
 
 using namespace std;
 

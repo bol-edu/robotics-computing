@@ -1,4 +1,7 @@
 //=================================DO NOT MODIFY=================================
+#ifndef _HOST_HPP_
+#define _HOST_HPP_
+
 #define CL_HPP_CL_1_2_DEFAULT_BUILD
 #define CL_HPP_TARGET_OPENCL_VERSION 120
 #define CL_HPP_MINIMUM_OPENCL_VERSION 120
@@ -14,6 +17,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -21,13 +25,19 @@
 #include <vector>
 #include <string>
 
+// typedef float FLOAT;
+// struct IPOINT
+// {
+// 	FLOAT x;
+// 	FLOAT y;
+// };
 
-#ifdef _ALL_KERNELS_
-#define _ONLY_K_StereoMatching_
-#define _ONLY_K_FeatureExtraction_
-#define _ONLY_K_FeatureTracking_
-#define _ONLY_K_MotionEstimation_
-#endif
+// struct MATCH
+// {
+// 	int a;
+// 	int b;
+// };
+
 
 #define OCL_CHECK(error, call)  																			\
 	call;                                                                                           		\
@@ -38,6 +48,8 @@
 		fprintf(stderr, "https://registry.khronos.org/OpenCL/sdk/1.0/docs/man/xhtml/errors.html\n");		\
         exit(EXIT_FAILURE);                                                                               	\
     }
+
+#endif
 //=================================DO NOT MODIFY=================================
 
 
