@@ -14,7 +14,7 @@ Please refer to the [Host Interface](https://hackmd.io/jeLJ6ZYyQmuwtZx6spOqRA) f
 ## Setup Environment
 
 To set up the Vitis Vision Library Build (for U50), please follow this [guide](https://hackmd.io/3VZbNXG4T2CFOSbVs57WFQ).
-However, it's on your choice to **install `libpng` library**, or just download and **use the extracted `libpng` library** in host-src.
+However, it's up to your discretion whether to install the libpng library or use the extracted libpng library included in the host-src folder.
 
 </br></br>
 
@@ -29,7 +29,7 @@ However, it's on your choice to **install `libpng` library**, or just download a
    * **C/C++ Build > Settings > Tool Setting > GCC Host Compiler(x86_64) > Includes**
    
      Add the path ``<path-to-opencv-include-folder>`` to **Include paths(-l)*.
-     
+   
      If you have installed `libpng` library, please add the path ``<path-to-libpng-folder-where-you-installed>`` to **Include paths(-l)**.  
      Alternatively, if you choose to use the extracted  `libpng` library, please add the path ``<path-to-libpng-folder-where-you-unzipped>`` to **Include paths(-l)**
      
@@ -62,6 +62,7 @@ However, it's on your choice to **install `libpng` library**, or just download a
      
      Enable **Automatically add binary container(s) to arguments**
    * Edit **Configuration** and enable **OpenCL trace**
+
 
    **Note:** 
    * If you run the pure C code, please delete ``<platform-vendor>`` ``<device-name>`` arguments, and disable **Automatically add binary container(s) to aruments**
