@@ -37,6 +37,9 @@ int main(int argc, char *argv[])
 //    o) argv[1] Platfrom Vendor
 //    o) argv[2] Device Name
 //    o) argv[3] XCLBIN file
+//    o) argv[4] RANSAC threshold value
+//    o) argv[5] RANSAC confidence value
+//    o) argv[6] RANSAC maxiter value
 // ============================================================================
 #ifdef ALL_MESSAGES
     cout << "HOST-Info: ============================================================= " << endl;
@@ -47,7 +50,7 @@ int main(int argc, char *argv[])
     if (argc != 7)
     {
         cout << "HOST-Error: Incorrect command line syntax " << endl;
-        cout << "HOST-Info:  Usage: " << argv[0] << " <Platform_Vendor> <Device_Name> <XCLBIN_File>  <Test Vectors Size>" << endl
+        cout << "HOST-Info:  Usage: " << argv[0] << " <Platform_Vendor> <Device_Name> <XCLBIN_File>  <threshold>  <confidence>  <maxiter>" << endl
              << endl;
         return EXIT_FAILURE;
     }
@@ -55,9 +58,15 @@ int main(int argc, char *argv[])
     const char *Target_Platform_Vendor = argv[1];
     const char *Target_Device_Name = argv[2];
     const char *xclbinFilename = argv[3];
+    int threshold = atoi(argv[4]);
+    FLOAT confidence = atof(argv[5]);
+    int maxiter = atoi(argv[6]);
     cout << "HOST-Info: Platform_Vendor   : " << Target_Platform_Vendor << endl;
     cout << "HOST-Info: Device_Name       : " << Target_Device_Name << endl;
     cout << "HOST-Info: XCLBIN_file       : " << xclbinFilename << endl;
+    cout << "HOST-Info: threshold         : " << threshold << endl;
+    cout << "HOST-Info: confidence        : " << confidence << endl;
+    cout << "HOST-Info: maxiter           : " << maxiter << endl;
 
     // ============================================================================
     // Step 2: Detect Target Platform and Target Device in a system.
@@ -416,29 +425,18 @@ int main(int argc, char *argv[])
     // ================================================================
     // Step 4: Prepare Data to Run Kernel
     // ================================================================
-    //   o) Generate data for DataIn_1 array
-    //   o) Generate data for DataIn_2 array
-    //   o) Generate data for DataIn_3 array
-    //   o) Allocate Memory to store the results: RES array
+    //   o) Allocate Memory to pointers
     //   o) Create Buffers in Global Memory to store data
     // ================================================================
-    MATCH* match;//[MAX_KEYPOINT_NUM];
+    MATCH *matches;
     int match_num;
-    IPOINT* kp0;
-    IPOINT* kp1;
+    IPOINT *kp0;
+    IPOINT *kp1;
     FLOAT fx, fy, cx, cy;
-    FLOAT* depth;
-    int threshold;
-    FLOAT confidence;
-    int maxiter;
+    FLOAT *depth;
     bool take_last = false;
-
-    threshold = atoi(argv[4]);
-    confidence = atof(argv[5]);
-    maxiter = atoi(argv[6]);
-
-    FLOAT* rmat;
-	FLOAT* tvec;
+    FLOAT *rmat;
+    FLOAT *tvec;
 
 #ifdef ALL_MESSAGES
     cout << endl;
@@ -448,91 +446,103 @@ int main(int argc, char *argv[])
 #endif
 
     // ------------------------------------------------------------------
-    // Step 4.1: Generate data for DataIn_1 array
-    //           Generate data for DataIn_2 array
-    //           Generate data for DataIn_3 array
-    //           Allocate Memory to store the results: RES array
+    // Step 4.1: Allocate Memory to pointers
     // ------------------------------------------------------------------
 
     cout << "HOST-Info: fetching data ...";
 
-    void *ptr=nullptr;
+    void *ptr = nullptr;
 
-    cout << "HOST-Info: Align memory for match ... ";
-    if (posix_memalign(&ptr,4096,MAX_KEYPOINT_NUM*sizeof(MATCH))) {
-    	cout << endl << "HOST-Error: Out of Memory during memory allocation for match array" << endl << endl;
-    	return EXIT_FAILURE;
-    }
-    match = reinterpret_cast<MATCH*>(ptr);
-
-    cout << "HOST-Info: Align memory for kp0 ... ";
-    if (posix_memalign(&ptr,4096, MAX_KEYPOINT_NUM*sizeof(IPOINT))) {
-    	cout << endl << "HOST-Error: Out of Memory during memory allocation for kp0 array" << endl << endl;
-    	return EXIT_FAILURE;
-    }
-    kp0 = reinterpret_cast<IPOINT*>(ptr);
-
-    cout << "HOST-Info: Align memory for kp1 ... ";
-    if (posix_memalign(&ptr,4096, MAX_KEYPOINT_NUM*sizeof(IPOINT))) {
-    	cout << endl << "HOST-Error: Out of Memory during memory allocation for kp1 array" << endl << endl;
+    cout << "HOST-Info: Align memory for matches ... ";
+    if (posix_memalign(&ptr, 4096, MAX_KEYPOINT_NUM * sizeof(MATCH)))
+    {
+        cout << endl
+             << "HOST-Error: Out of Memory during memory allocation for matches array" << endl
+             << endl;
         return EXIT_FAILURE;
     }
-    kp1 = reinterpret_cast<IPOINT*>(ptr);
+    matches = reinterpret_cast<MATCH *>(ptr);
+
+    cout << "HOST-Info: Align memory for kp0 ... ";
+    if (posix_memalign(&ptr, 4096, MAX_KEYPOINT_NUM * sizeof(IPOINT)))
+    {
+        cout << endl
+             << "HOST-Error: Out of Memory during memory allocation for kp0 array" << endl
+             << endl;
+        return EXIT_FAILURE;
+    }
+    kp0 = reinterpret_cast<IPOINT *>(ptr);
+
+    cout << "HOST-Info: Align memory for kp1 ... ";
+    if (posix_memalign(&ptr, 4096, MAX_KEYPOINT_NUM * sizeof(IPOINT)))
+    {
+        cout << endl
+             << "HOST-Error: Out of Memory during memory allocation for kp1 array" << endl
+             << endl;
+        return EXIT_FAILURE;
+    }
+    kp1 = reinterpret_cast<IPOINT *>(ptr);
 
     cout << "HOST-Info: Align memory for depth ... ";
-    if (posix_memalign(&ptr,4096, IMAGE_WIDTH * IMAGE_HEIGTH * sizeof(FLOAT))) {
-    	cout << endl << "HOST-Error: Out of Memory during memory allocation for depth array" << endl << endl;
-    	return EXIT_FAILURE;
+    if (posix_memalign(&ptr, 4096, IMAGE_WIDTH * IMAGE_HEIGTH * sizeof(FLOAT)))
+    {
+        cout << endl
+             << "HOST-Error: Out of Memory during memory allocation for depth array" << endl
+             << endl;
+        return EXIT_FAILURE;
     }
-    depth = reinterpret_cast<FLOAT*>(ptr);
-
-    read_data(match, match_num, kp0, kp1, fx, fy, cx, cy, depth, 0);
+    depth = reinterpret_cast<FLOAT *>(ptr);
 
     cout << "HOST-Info: Align memory for rmat ... ";
-    if (posix_memalign(&ptr,4096, 9 * sizeof(FLOAT))) {
-    	cout << endl << "HOST-Error: Out of Memory during memory allocation for rmat array" << endl << endl;
-    	return EXIT_FAILURE;
+    if (posix_memalign(&ptr, 4096, 9 * sizeof(FLOAT)))
+    {
+        cout << endl
+             << "HOST-Error: Out of Memory during memory allocation for rmat array" << endl
+             << endl;
+        return EXIT_FAILURE;
     }
-    rmat = reinterpret_cast<FLOAT*>(ptr);
+    rmat = reinterpret_cast<FLOAT *>(ptr);
 
     cout << "HOST-Info: Align memory for tvec ... ";
-    if (posix_memalign(&ptr,4096, 3 * sizeof(FLOAT))) {
-    	cout << endl << "HOST-Error: Out of Memory during memory allocation for tvec array" << endl << endl;
-    	return EXIT_FAILURE;
+    if (posix_memalign(&ptr, 4096, 3 * sizeof(FLOAT)))
+    {
+        cout << endl
+             << "HOST-Error: Out of Memory during memory allocation for tvec array" << endl
+             << endl;
+        return EXIT_FAILURE;
     }
-    tvec = reinterpret_cast<FLOAT*>(ptr);
+    tvec = reinterpret_cast<FLOAT *>(ptr);
 
     cout << endl;
 
 // ------------------------------------------------------------------
 // Step 4.2: Create Buffers in Global Memory to store data
-//             o) GlobMem_BUF_DataIn_1 - stores DataIn_1 (R/W)
-//             o) GlobMem_BUF_DataIn_2 - stores DataIn_2 (R)
-//             o) GlobMem_BUF_DataIn_3 - stores DataIn_3 (R)
-//             o) GlobMem_BUF_KpB      - stores Results from K_KpB (R/W)
-//             o) GlobMem_BUF_KA       - stores Results from K_KA  (R/W)
-//             o) GlobMem_BUF_KB       - stores Results from K_KB  (R/W)
-//             o) GlobMem_BUF_RES      - stores RES (W)
+//             o) GlobMem_BUF_matches  - stores matches (R)
+//             o) GlobMem_BUF_kp0      - stores kp0     (R)
+//             o) GlobMem_BUF_kp1      - stores kp1     (R)
+//             o) GlobMem_BUF_depth    - stores depth   (R)
+//             o) GlobMem_BUF_rmat     - stores Results from rmat  (R/W)
+//             o) GlobMem_BUF_tvec     - stores Results from tvec  (R/W)
 // ------------------------------------------------------------------
 #ifdef ALL_MESSAGES
     cout << "HOST-Info: Allocating buffers in Global Memory to store Input and Output Data ..." << endl;
 #endif
-    cl_mem GlobMem_BUF_match, GlobMem_BUF_kp0, GlobMem_BUF_kp1, GlobMem_BUF_depth, GlobMem_BUF_rmat, GlobMem_BUF_tvec;
+    cl_mem GlobMem_BUF_matches, GlobMem_BUF_kp0, GlobMem_BUF_kp1, GlobMem_BUF_depth, GlobMem_BUF_rmat, GlobMem_BUF_tvec;
 
-    // Allocate Global Memory for GlobMem_BUF_match
+    // Allocate Global Memory for GlobMem_BUF_matches
     // .......................................................
-    GlobMem_BUF_match = clCreateBuffer(Context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(MATCH), match, &errCode);
+    GlobMem_BUF_matches = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(MATCH), matches, &errCode);
     if (errCode != CL_SUCCESS)
     {
         cout << endl
-             << "Host-Error: Failed to allocate Global Memory for GlobMem_BUF_match" << endl
+             << "Host-Error: Failed to allocate Global Memory for GlobMem_BUF_matches" << endl
              << endl;
         return EXIT_FAILURE;
     }
 
     // Allocate Global Memory for GlobMem_BUF_kp0
     // .......................................................
-    GlobMem_BUF_kp0 = clCreateBuffer(Context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(IPOINT), kp0, &errCode);
+    GlobMem_BUF_kp0 = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(IPOINT), kp0, &errCode);
     if (errCode != CL_SUCCESS)
     {
         cout << endl
@@ -541,9 +551,9 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    // Allocate Global Memory for GlobMem_BUF_match
+    // Allocate Global Memory for GlobMem_BUF_kp1
     // .......................................................
-    GlobMem_BUF_kp1 = clCreateBuffer(Context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(IPOINT), kp1, &errCode);
+    GlobMem_BUF_kp1 = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(IPOINT), kp1, &errCode);
     if (errCode != CL_SUCCESS)
     {
         cout << endl
@@ -554,7 +564,7 @@ int main(int argc, char *argv[])
 
     // Allocate Global Memory for GlobMem_BUF_depth
     // .......................................................
-    GlobMem_BUF_depth = clCreateBuffer(Context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, IMAGE_HEIGTH * IMAGE_WIDTH * sizeof(FLOAT), depth, &errCode);
+    GlobMem_BUF_depth = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, IMAGE_HEIGTH * IMAGE_WIDTH * sizeof(FLOAT), depth, &errCode);
     if (errCode != CL_SUCCESS)
     {
         cout << endl
@@ -589,24 +599,23 @@ int main(int argc, char *argv[])
     // Step 5: Set Kernel Arguments and Run the Application
     //         o) Set Kernel Arguments
     // 				----------------------------------------------------
-    // 				 Kernel	  		Argument Nb		Description
+    // 				 #  Argument
     // 				----------------------------------------------------
-    //  			 K_KVConstAdd	0				CONST_arg
-    //				 K_KVConstAdd	1				GlobMem_BUF_DataIn_1
-    //
-    //  			 K_KA			0				GlobMem_BUF_DataIn_1
-    //  			 K_KA			1				GlobMem_BUF_KA
-    //
-    //  			 K_KpB			0				GlobMem_BUF_DataIn_2
-    //  			 K_KpB			1				GlobMem_BUF_DataIn_3
-    //  			 K_KpB			2				GlobMem_BUF_KpB
-    //
-    //  			 K_KB			0				GlobMem_BUF_KpB
-    //  			 K_KB			1				GlobMem_BUF_KB
-    //
-    //  			 K_KCalc		0				GlobMem_BUF_KA
-    //  			 K_KCalc		1				GlobMem_BUF_KB
-    //  			 K_KCalc		2				GlobMem_BUF_RES
+    //  			 0	GlobMem_BUF_matches
+    //				 1	match_num
+    //				 2	GlobMem_BUF_kp0
+    //				 3	GlobMem_BUF_kp1
+    //				 4	fx
+    //				 5	fy
+    //				 6	cx
+    //				 7	cy
+    //				 8	GlobMem_BUF_depth
+    //				 9	threshold
+    //				 10	confidence
+    //				 11	maxiter
+    //				 12	GlobMem_BUF_rmat
+    //				 13	GlobMem_BUF_tvec
+    //				 14	take_last
     // 				----------------------------------------------------
     //         o) Copy Input Data from Host to Global Memory
     //         o) Submit Kernels for Execution
@@ -615,8 +624,7 @@ int main(int argc, char *argv[])
     int Nb_Of_Mem_Events = 6,
         Nb_Of_Exe_Events = 1;
 
-    cl_event Mem_op_event[Nb_Of_Mem_Events],
-        K_exe_event[Nb_Of_Exe_Events];
+    cl_event Mem_op_event[Nb_Of_Mem_Events], K_exe_event[Nb_Of_Exe_Events];
 
 #ifdef ALL_MESSAGES
     cout << endl;
@@ -633,7 +641,7 @@ int main(int argc, char *argv[])
 #endif
     errCode = false;
 
-    errCode |= clSetKernelArg(EstimateMotion, 0, sizeof(cl_mem), &GlobMem_BUF_match);
+    errCode |= clSetKernelArg(EstimateMotion, 0, sizeof(cl_mem), &GlobMem_BUF_matches);
     errCode |= clSetKernelArg(EstimateMotion, 1, sizeof(int), &match_num);
     errCode |= clSetKernelArg(EstimateMotion, 2, sizeof(cl_mem), &GlobMem_BUF_kp0);
     errCode |= clSetKernelArg(EstimateMotion, 3, sizeof(cl_mem), &GlobMem_BUF_kp1);
@@ -657,78 +665,57 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-// ------------------------------------------------------
-// Step 5.2: Copy Input data from Host to Global Memory
-// ------------------------------------------------------
+    // ------------------------------------------------------
+    // Step 5.2: Copy Input data from Host to Global Memory
+    // ------------------------------------------------------
 
-
-
-for(int ii=0; ii<2001; ii++)//num_frames-1; ii++)
-	{
-
-    read_data(match, match_num, kp0, kp1, fx, fy, cx, cy, depth, ii);
-    errCode |= clSetKernelArg(EstimateMotion, 1, sizeof(int), &match_num);
-    errCode |= clSetKernelArg(EstimateMotion, 14, sizeof(bool), &take_last);
+    for (int ii = 0; ii < num_frames - 1; ii++)
+    {
+        read_data(matches, match_num, kp0, kp1, fx, fy, cx, cy, depth, ii);
+        errCode |= clSetKernelArg(EstimateMotion, 1, sizeof(int), &match_num);
+        errCode |= clSetKernelArg(EstimateMotion, 14, sizeof(bool), &take_last);
 
 #ifdef ALL_MESSAGES
-    cout << "HOST_Info: Copy Input data to Global Memory ..." << endl;
+        cout << "HOST_Info: Copy Input data to Global Memory ..." << endl;
 #endif
-    errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_match, 0, 0, NULL, &Mem_op_event[0]);
-    if (errCode != CL_SUCCESS)
-    {
-        cout << endl
-             << "Host-Error: Failed to write match to GlobMem_BUF_match" << endl
-             << endl;
-        return EXIT_FAILURE;
-    }
-
-    errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_kp0, 0, 0, NULL, &Mem_op_event[1]);
-    if (errCode != CL_SUCCESS)
-    {
-        cout << endl
-             << "Host-Error: Failed to write kp0 to GlobMem_BUF_kp0" << endl
-             << endl;
-        return EXIT_FAILURE;
-    }
-
-    errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_kp1, 0, 0, NULL, &Mem_op_event[2]);
-    if (errCode != CL_SUCCESS)
-    {
-        cout << endl
-             << "Host-Error: Failed to write kp1 to GlobMem_BUF_kp1" << endl
-             << endl;
-        return EXIT_FAILURE;
-    }
-
-    errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_depth, 0, 0, NULL, &Mem_op_event[3]);
-    if (errCode != CL_SUCCESS)
-    {
-        cout << endl
-             << "Host-Error: Failed to write depth to GlobMem_BUF_depth" << endl
-             << endl;
-        return EXIT_FAILURE;
-    }
-
-    /*errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_rmat, 0, 0, NULL, &Mem_op_event[4]);
-    if (errCode != CL_SUCCESS)
-    {
+        errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_matches, 0, 0, NULL, &Mem_op_event[0]);
+        if (errCode != CL_SUCCESS)
+        {
             cout << endl
-                 << "Host-Error: Failed to write kp1 to GlobMem_BUF_rmat" << endl
+                 << "Host-Error: Failed to write match to GlobMem_BUF_matches" << endl
                  << endl;
             return EXIT_FAILURE;
         }
 
-        errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_tvec, 0, 0, NULL, &Mem_op_event[5]);
+        errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_kp0, 0, 0, NULL, &Mem_op_event[1]);
         if (errCode != CL_SUCCESS)
         {
             cout << endl
-                 << "Host-Error: Failed to write depth to GlobMem_BUF_tvec" << endl
+                 << "Host-Error: Failed to write kp0 to GlobMem_BUF_kp0" << endl
                  << endl;
             return EXIT_FAILURE;
-        }*/
+        }
 
-    errCode = clEnqueueBarrierWithWaitList(Command_Queue, 0, 0, 0);
-    if (errCode != CL_SUCCESS)
+        errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_kp1, 0, 0, NULL, &Mem_op_event[2]);
+        if (errCode != CL_SUCCESS)
+        {
+            cout << endl
+                 << "Host-Error: Failed to write kp1 to GlobMem_BUF_kp1" << endl
+                 << endl;
+            return EXIT_FAILURE;
+        }
+
+        errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_depth, 0, 0, NULL, &Mem_op_event[3]);
+        if (errCode != CL_SUCCESS)
+        {
+            cout << endl
+                 << "Host-Error: Failed to write depth to GlobMem_BUF_depth" << endl
+                 << endl;
+            return EXIT_FAILURE;
+        }
+
+        errCode = clEnqueueBarrierWithWaitList(Command_Queue, 0, 0, 0);
+        if (errCode != CL_SUCCESS)
         {
             cout << endl
                  << "Host-Error: Failed to barrier" << endl
@@ -736,101 +723,67 @@ for(int ii=0; ii<2001; ii++)//num_frames-1; ii++)
             return EXIT_FAILURE;
         }
 
-    // ----------------------------------------
-    // Step 5.3: Submit Kernels for Execution
-    // ----------------------------------------
+        // ----------------------------------------
+        // Step 5.3: Submit Kernels for Execution
+        // ----------------------------------------
 
-    cout << "HOST-Info: Submitting Kernel EstimateMotion ..." << endl;
+        cout << "HOST-Info: Submitting Kernel EstimateMotion ..." << endl;
 
-    errCode = clEnqueueTask(Command_Queue, EstimateMotion, 0, NULL, &K_exe_event[0]);
-    if (errCode != CL_SUCCESS)
-    {
-        cout << endl
-             << "HOST-Error: Failed to submit EstimateMotion" << endl
-             << endl;
-        return EXIT_FAILURE;
-    }
+        errCode = clEnqueueTask(Command_Queue, EstimateMotion, 0, NULL, &K_exe_event[0]);
+        if (errCode != CL_SUCCESS)
+        {
+            cout << endl
+                 << "HOST-Error: Failed to submit EstimateMotion" << endl
+                 << endl;
+            return EXIT_FAILURE;
+        }
 
-// ---------------------------------------------------------
-// Step 5.4: Submit Copy Results from Global Memory to Host
-// ---------------------------------------------------------
+        // ---------------------------------------------------------
+        // Step 5.4: Submit Copy Results from Global Memory to Host
+        // ---------------------------------------------------------
 #ifdef ALL_MESSAGES
-    cout << "HOST_Info: Submitting Copy Results data from Global Memory to Host ..." << endl;
+        cout << "HOST_Info: Submitting Copy Results data from Global Memory to Host ..." << endl;
 #endif
 
-    errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_rmat, CL_MIGRATE_MEM_OBJECT_HOST, 1, &K_exe_event[0], &Mem_op_event[4]);
-    if (errCode != CL_SUCCESS)
-    {
-        cout << endl
-             << "Host-Error: Failed to submit Copy Results from GlobMem_BUF_rmat to rmat" << endl
-             << endl;
-        return EXIT_FAILURE;
-    }
+        errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_rmat, CL_MIGRATE_MEM_OBJECT_HOST, 1, &K_exe_event[0], &Mem_op_event[4]);
+        if (errCode != CL_SUCCESS)
+        {
+            cout << endl
+                 << "Host-Error: Failed to submit Copy Results from GlobMem_BUF_rmat to rmat" << endl
+                 << endl;
+            return EXIT_FAILURE;
+        }
 
-    errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_tvec, CL_MIGRATE_MEM_OBJECT_HOST, 1, &K_exe_event[0], &Mem_op_event[5]);
-    if (errCode != CL_SUCCESS)
-    {
-        cout << endl
-             << "Host-Error: Failed to submit Copy Results from GlobMem_BUF_tvec to tvec" << endl
-             << endl;
-        return EXIT_FAILURE;
-    }
+        errCode = clEnqueueMigrateMemObjects(Command_Queue, 1, &GlobMem_BUF_tvec, CL_MIGRATE_MEM_OBJECT_HOST, 1, &K_exe_event[0], &Mem_op_event[5]);
+        if (errCode != CL_SUCCESS)
+        {
+            cout << endl
+                 << "Host-Error: Failed to submit Copy Results from GlobMem_BUF_tvec to tvec" << endl
+                 << endl;
+            return EXIT_FAILURE;
+        }
 
-    cout << endl
-         << "HOST_Info: Waiting for application to be completed ..." << endl;
-    clFinish(Command_Queue);
+        cout << endl
+             << "HOST_Info: Waiting for application to be completed ..." << endl;
+        clFinish(Command_Queue);
 
 // ============================================================================
 // Step 6: Processing Output Results
-//         o) Store output results to a RES.txt file
-//         o) Check correctness of the output results
+//         o) Store output results to a out_N.txt file
 // ============================================================================
 #ifdef ALL_MESSAGES
-    cout << endl;
-    cout << "HOST-Info: ============================================================= " << endl;
-    cout << "HOST-Info: (Step 6) Display result of iteration " << ii << endl;
-    cout << "HOST-Info: ============================================================= " << endl;
+        cout << endl;
+        cout << "HOST-Info: ============================================================= " << endl;
+        cout << "HOST-Info: (Step 6) Display result of iteration " << ii << endl;
+        cout << "HOST-Info: ============================================================= " << endl;
 #endif
-
-	display_output(rmat, tvec);
-
-    char out_name[50];
-        	sprintf(out_name, "../../../output/out_%d.txt", ii);
-        	cout << out_name << endl;
-        	FILE* fp;
-        	fp = fopen(out_name, "w");
-        	for(int i=0; i<9; i++)
-        		fprintf(fp, "%f\n", rmat[i]);
-        	for(int i=0; i<3; i++)
-        		fprintf(fp, "%f\n", tvec[i]);
-        	fclose(fp);
-
-	take_last = true;
-}
-    // ------------------------------------------------------
-    // Step 6.1: Store output Result to the RES.txt file
-    // ------------------------------------------------------
-
-
-    /*if (pass)
-        cout << ">> Test passed!" << endl;
-    else
-        cout << ">> Test failed!" << endl;*/
+        display_output(rmat, tvec);
+        store_output(rmat, tvec, ii);
+        take_last = true;
+    }
 
     // ============================================================================
-    // Step 7: Custom Profiling
-    // ============================================================================
-    /*cout << "HOST-Info: ============================================================= " << endl;
-    cout << "HOST-Info: (Step 7) Custom Profiling                                     " << endl;
-    cout << "HOST-Info: ============================================================= " << endl;
-    int Nb_Of_Kernels = Nb_Of_Exe_Events;
-    int Nb_Of_Memory_Tranfers = Nb_Of_Mem_Events;
-
-    string list_of_kernel_names[Nb_Of_Kernels]={"K_KVConstAdd","K_KpB","K_KA","K_KB","K_KCalc"};
-    run_custom_profiling (Nb_Of_Kernels,Nb_Of_Memory_Tranfers,K_exe_event,Mem_op_event,list_of_kernel_names);*/
-
-    // ============================================================================
-    // Step 8: Release Allocated Resources
+    // Step 7: Release Allocated Resources
     // ============================================================================
     clReleaseDevice(Target_Device_ID); // Only available in OpenCL >= 1.2
 
@@ -841,7 +794,7 @@ for(int ii=0; ii<2001; ii++)//num_frames-1; ii++)
 
     clReleaseMemObject(GlobMem_BUF_kp0);
     clReleaseMemObject(GlobMem_BUF_kp1);
-    clReleaseMemObject(GlobMem_BUF_match);
+    clReleaseMemObject(GlobMem_BUF_matches);
     clReleaseMemObject(GlobMem_BUF_depth);
     clReleaseMemObject(GlobMem_BUF_rmat);
     clReleaseMemObject(GlobMem_BUF_tvec);
@@ -856,7 +809,7 @@ for(int ii=0; ii<2001; ii++)//num_frames-1; ii++)
     free(Device_IDs);
     free(kp0);
     free(kp1);
-    free(match);
+    free(matches);
     free(depth);
     free(rmat);
     free(tvec);
@@ -871,13 +824,15 @@ for(int ii=0; ii<2001; ii++)//num_frames-1; ii++)
 // =========================================
 // Helper Function: Loads program to memory
 // =========================================
-int loadFile2Memory(const char *filename, char **result) {
+int loadFile2Memory(const char *filename, char **result)
+{
 
     int size = 0;
 
-    cout<<filename<<endl;
+    cout << filename << endl;
     std::ifstream stream(filename, std::ifstream::binary);
-    if (!stream) {
+    if (!stream)
+    {
         return -1;
     }
 
@@ -887,7 +842,8 @@ int loadFile2Memory(const char *filename, char **result) {
 
     *result = new char[size + 1];
     stream.read(*result, size);
-    if (!stream) {
+    if (!stream)
+    {
         return -2;
     }
     stream.close();
@@ -895,47 +851,47 @@ int loadFile2Memory(const char *filename, char **result) {
     return size;
 }
 
-void read_data(MATCH* match, int &match_num,
-			   IPOINT* kp0, IPOINT* kp1,
-			   FLOAT &fx, FLOAT &fy, FLOAT &cx, FLOAT &cy, FLOAT* depth, int idx)
+void read_data(MATCH *match, int &match_num,
+               IPOINT *kp0, IPOINT *kp1,
+               FLOAT &fx, FLOAT &fy, FLOAT &cx, FLOAT &cy, FLOAT *depth, int idx)
 {
-	cout << endl;
+    cout << endl;
 
-	FILE *fp;
+    FILE *fp;
 
-	char* match_name = new char[100];
-	char* match_num_name = new char[100];
-	char* kp0_name = new char[100];
-	char* kp1_name = new char[100];
-	char* depth_name = new char[100];
+    char *match_name = new char[100];
+    char *match_num_name = new char[100];
+    char *kp0_name = new char[100];
+    char *kp1_name = new char[100];
+    char *depth_name = new char[100];
 
-	sprintf(match_name, "../../../testdata/K_FeatureTracking/Matches_iteration%d.txt", idx);
-	sprintf(match_num_name, "../../../testdata/K_FeatureTracking/Detected_Matches_iteration%d.txt", idx);
-	sprintf(kp0_name, "../../../testdata/K_FeatureExtraction/KP0_iteration%d.txt", idx);
-	sprintf(kp1_name, "../../../testdata/K_FeatureExtraction/KP1_iteration%d.txt", idx);
-	sprintf(depth_name, "../../../testdata/K_StereoMatching/Depth_iteration%d.txt", idx);
-	/*sprintf(match_name, "../../../testdata/hls_same/match_%d.txt", idx);
-		sprintf(kp0_name, "../../../testdata/hls_same/KP0_iteration%d.txt", idx);
-		sprintf(kp1_name, "../../../testdata/hls_same/KP1_iteration%d.txt", idx);
-		sprintf(depth_name, "../../../testdata/hls_same/Depth_iteration%d.txt", idx);*/
+    sprintf(match_name, "../../../testdata/K_FeatureTracking/Matches_iteration%d.txt", idx);
+    sprintf(match_num_name, "../../../testdata/K_FeatureTracking/Detected_Matches_iteration%d.txt", idx);
+    sprintf(kp0_name, "../../../testdata/K_FeatureExtraction/KP0_iteration%d.txt", idx);
+    sprintf(kp1_name, "../../../testdata/K_FeatureExtraction/KP1_iteration%d.txt", idx);
+    sprintf(depth_name, "../../../testdata/K_StereoMatching/Depth_iteration%d.txt", idx);
+    /*sprintf(match_name, "../../../testdata/hls_same/match_%d.txt", idx);
+        sprintf(kp0_name, "../../../testdata/hls_same/KP0_iteration%d.txt", idx);
+        sprintf(kp1_name, "../../../testdata/hls_same/KP1_iteration%d.txt", idx);
+        sprintf(depth_name, "../../../testdata/hls_same/Depth_iteration%d.txt", idx);*/
 
-	cout << "\t--- Reading Matched Index" << endl;
+    cout << "\t--- Reading Matched Index" << endl;
 
-		fp = fopen(match_num_name, "r");
-	    fscanf(fp, "%d", &match_num);
-	    fclose(fp);
+    fp = fopen(match_num_name, "r");
+    fscanf(fp, "%d", &match_num);
+    fclose(fp);
 
-		fp = fopen(match_name, "r");
-	    for (int i = 0; i < match_num; i++)
-	    {
-	        int m, n;
-	        fscanf(fp, "%d %d", &m, &n);
-	        match[i].a = m;
-	        match[i].b = n;
-	    }
-	    fclose(fp);
+    fp = fopen(match_name, "r");
+    for (int i = 0; i < match_num; i++)
+    {
+        int m, n;
+        fscanf(fp, "%d %d", &m, &n);
+        match[i].a = m;
+        match[i].b = n;
+    }
+    fclose(fp);
 
-	cout << "\t--- Reading Keypoint0" << endl;
+    cout << "\t--- Reading Keypoint0" << endl;
     fp = fopen(kp0_name, "r");
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
@@ -946,23 +902,23 @@ void read_data(MATCH* match, int &match_num,
     }
     fclose(fp);
 
-	cout << "\t--- Reading Keypoint1" << endl;
+    cout << "\t--- Reading Keypoint1" << endl;
     fp = fopen(kp1_name, "r");
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
-    	FLOAT m, n;
-    	fscanf(fp, "%f %f", &m, &n);
-    	kp1[i].x = m;
-    	kp1[i].y = n;
+        FLOAT m, n;
+        fscanf(fp, "%f %f", &m, &n);
+        kp1[i].x = m;
+        kp1[i].y = n;
     }
     fclose(fp);
 
-	cout << "\t--- Reading Calibration Matix" << endl;
+    cout << "\t--- Reading Calibration Matix" << endl;
     fp = fopen("../../../testdata/k.txt", "r");
     fscanf(fp, "%f %f %f %f", &fx, &cx, &fy, &cy);
     fclose(fp);
 
-	cout << "\t--- Reading Depth Map" << endl;
+    cout << "\t--- Reading Depth Map" << endl;
     fp = fopen(depth_name, "r");
     for (int i = 0; i < IMAGE_HEIGTH; i++)
     {
@@ -978,21 +934,34 @@ void read_data(MATCH* match, int &match_num,
 
 void display_output(FLOAT rmat[9], FLOAT tvec[3])
 {
-	cout << "rmat" << endl;
-	for(int j=0; j<3; j++)
-	{
-		for(int k=0; k<3; k++)
-		{
-			cout<< rmat[j*3+k] << " ";
-		}
-		cout << endl;
-	}
-	cout << endl;
+    cout << "rmat" << endl;
+    for (int j = 0; j < 3; j++)
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            cout << rmat[j * 3 + k] << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
 
-	cout << "tvec" << endl;
-	for(int j=0; j<3; j++)
-	{
-		cout<< tvec[j] << " ";
-	}
-	cout << endl << endl;
+    cout << "tvec" << endl;
+    for (int j = 0; j < 3; j++)
+    {
+        cout << tvec[j] << " ";
+    }
+    cout << endl
+         << endl;
+}
+
+void store_output(FLOAT rmat[9], FLOAT tvec[3], int index)
+{
+    char output_dir[50];
+    sprintf(output_dir, "../../../output/out_%d.txt", index);
+    FILE *fp = fopen(output_dir, "w");
+    for (int i = 0; i < 9; i++)
+        fprintf(fp, "%f\n", rmat[i]);
+    for (int i = 0; i < 3; i++)
+        fprintf(fp, "%f\n", tvec[i]);
+    fclose(fp);
 }
