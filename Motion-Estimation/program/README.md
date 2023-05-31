@@ -20,7 +20,7 @@ make run TARGET=hw
 ```
 
 ## Modify the Arguements
-    args.mk
+args.mk
 ```
 PLATFORM_VENDOR := Xilinx
 HW_PLATFORM 	:= xilinx_u50_gen3x16_xdma_base_5
