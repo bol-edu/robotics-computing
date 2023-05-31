@@ -37,9 +37,11 @@ int main(int argc, char *argv[])
 //    o) argv[1] Platfrom Vendor
 //    o) argv[2] Device Name
 //    o) argv[3] XCLBIN file
-//    o) argv[4] RANSAC threshold value
-//    o) argv[5] RANSAC confidence value
-//    o) argv[6] RANSAC maxiter value
+//    o) argv[4] Input data directory
+//    o) argv[5] Output data directory
+//    o) argv[6] RANSAC threshold value
+//    o) argv[7] RANSAC confidence value
+//    o) argv[8] RANSAC maxiter value
 // ============================================================================
 #ifdef ALL_MESSAGES
     cout << "HOST-Info: ============================================================= " << endl;
@@ -47,10 +49,11 @@ int main(int argc, char *argv[])
     cout << "HOST-Info: ============================================================= " << endl;
 #endif
 
-    if (argc != 7)
+    if (argc != 9)
     {
         cout << "HOST-Error: Incorrect command line syntax " << endl;
-        cout << "HOST-Info:  Usage: " << argv[0] << " <Platform_Vendor> <Device_Name> <XCLBIN_File>  <threshold>  <confidence>  <maxiter>" << endl
+        cout << "HOST-Info: " << endl
+             << " Usage: " << argv[0] << " <Platform_Vendor> <Device_Name> <XCLBIN_File> <Data_Folder> <Threshold> <Confidence> <Max_iteration>" << endl
              << endl;
         return EXIT_FAILURE;
     }
@@ -58,15 +61,14 @@ int main(int argc, char *argv[])
     const char *Target_Platform_Vendor = argv[1];
     const char *Target_Device_Name = argv[2];
     const char *xclbinFilename = argv[3];
-    int threshold = atoi(argv[4]);
-    FLOAT confidence = atof(argv[5]);
-    int maxiter = atoi(argv[6]);
-    cout << "HOST-Info: Platform_Vendor   : " << Target_Platform_Vendor << endl;
-    cout << "HOST-Info: Device_Name       : " << Target_Device_Name << endl;
-    cout << "HOST-Info: XCLBIN_file       : " << xclbinFilename << endl;
-    cout << "HOST-Info: threshold         : " << threshold << endl;
-    cout << "HOST-Info: confidence        : " << confidence << endl;
-    cout << "HOST-Info: maxiter           : " << maxiter << endl;
+    char *input_data_dir = argv[4];
+    char *output_data_dir = argv[5];
+
+    cout << "HOST-Info: Platform_Vendor        : " << Target_Platform_Vendor << endl;
+    cout << "HOST-Info: Device_Name            : " << Target_Device_Name << endl;
+    cout << "HOST-Info: XCLBIN_file            : " << xclbinFilename << endl;
+    cout << "HOST-Info: Input data directory   : " << input_data_dir << endl;
+    cout << "HOST-Info: Output data directory  : " << output_data_dir << endl;
 
     // ============================================================================
     // Step 2: Detect Target Platform and Target Device in a system.
@@ -425,16 +427,27 @@ int main(int argc, char *argv[])
     // ================================================================
     // Step 4: Prepare Data to Run Kernel
     // ================================================================
-    //   o) Allocate Memory to pointers
+    //   o) Generate data for DataIn_1 array
+    //   o) Generate data for DataIn_2 array
+    //   o) Generate data for DataIn_3 array
+    //   o) Allocate Memory to store the results: RES array
     //   o) Create Buffers in Global Memory to store data
     // ================================================================
-    MATCH *matches;
+    MATCH *match;
     int match_num;
     IPOINT *kp0;
     IPOINT *kp1;
     FLOAT fx, fy, cx, cy;
     FLOAT *depth;
+    int threshold;
+    FLOAT confidence;
+    int maxiter;
     bool take_last = false;
+
+    threshold = atoi(argv[6]);
+    confidence = atof(argv[7]);
+    maxiter = atoi(argv[8]);
+
     FLOAT *rmat;
     FLOAT *tvec;
 
@@ -453,15 +466,15 @@ int main(int argc, char *argv[])
 
     void *ptr = nullptr;
 
-    cout << "HOST-Info: Align memory for matches ... ";
+    cout << "HOST-Info: Align memory for match ... ";
     if (posix_memalign(&ptr, 4096, MAX_KEYPOINT_NUM * sizeof(MATCH)))
     {
         cout << endl
-             << "HOST-Error: Out of Memory during memory allocation for matches array" << endl
+             << "HOST-Error: Out of Memory during memory allocation for match array" << endl
              << endl;
         return EXIT_FAILURE;
     }
-    matches = reinterpret_cast<MATCH *>(ptr);
+    match = reinterpret_cast<MATCH *>(ptr);
 
     cout << "HOST-Info: Align memory for kp0 ... ";
     if (posix_memalign(&ptr, 4096, MAX_KEYPOINT_NUM * sizeof(IPOINT)))
@@ -492,6 +505,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     depth = reinterpret_cast<FLOAT *>(ptr);
+
+    read_data(match, match_num, kp0, kp1, fx, fy, cx, cy, depth, input_data_dir, 0);
 
     cout << "HOST-Info: Align memory for rmat ... ";
     if (posix_memalign(&ptr, 4096, 9 * sizeof(FLOAT)))
@@ -531,7 +546,7 @@ int main(int argc, char *argv[])
 
     // Allocate Global Memory for GlobMem_BUF_matches
     // .......................................................
-    GlobMem_BUF_matches = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(MATCH), matches, &errCode);
+    GlobMem_BUF_matches = clCreateBuffer(Context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, MAX_KEYPOINT_NUM * sizeof(MATCH), match, &errCode);
     if (errCode != CL_SUCCESS)
     {
         cout << endl
@@ -621,10 +636,12 @@ int main(int argc, char *argv[])
     //         o) Submit Kernels for Execution
     //         o) Copy Results from Global Memory to Host
     // ============================================================================
+
     int Nb_Of_Mem_Events = 6,
         Nb_Of_Exe_Events = 1;
 
-    cl_event Mem_op_event[Nb_Of_Mem_Events], K_exe_event[Nb_Of_Exe_Events];
+    cl_event Mem_op_event[Nb_Of_Mem_Events],
+        K_exe_event[Nb_Of_Exe_Events];
 
 #ifdef ALL_MESSAGES
     cout << endl;
@@ -669,9 +686,10 @@ int main(int argc, char *argv[])
     // Step 5.2: Copy Input data from Host to Global Memory
     // ------------------------------------------------------
 
-    for (int ii = 0; ii < num_frames - 1; ii++)
+    for (int iter = 0; iter < num_frames; iter++)
     {
-        read_data(matches, match_num, kp0, kp1, fx, fy, cx, cy, depth, ii);
+
+        read_data(match, match_num, kp0, kp1, fx, fy, cx, cy, depth, input_data_dir, iter);
         errCode |= clSetKernelArg(EstimateMotion, 1, sizeof(int), &match_num);
         errCode |= clSetKernelArg(EstimateMotion, 14, sizeof(bool), &take_last);
 
@@ -769,16 +787,17 @@ int main(int argc, char *argv[])
 
 // ============================================================================
 // Step 6: Processing Output Results
-//         o) Store output results to a out_N.txt file
+//         o) Store output results to a RES.txt file
+//         o) Check correctness of the output results
 // ============================================================================
 #ifdef ALL_MESSAGES
         cout << endl;
         cout << "HOST-Info: ============================================================= " << endl;
-        cout << "HOST-Info: (Step 6) Display result of iteration " << ii << endl;
+        cout << "HOST-Info: (Step 6) Display result of iteration " << iter << endl;
         cout << "HOST-Info: ============================================================= " << endl;
 #endif
-        display_output(rmat, tvec);
-        store_output(rmat, tvec, ii);
+
+        display_store_output(rmat, tvec, iter, output_data_dir);
         take_last = true;
     }
 
@@ -809,7 +828,7 @@ int main(int argc, char *argv[])
     free(Device_IDs);
     free(kp0);
     free(kp1);
-    free(matches);
+    free(match);
     free(depth);
     free(rmat);
     free(tvec);
@@ -853,35 +872,44 @@ int loadFile2Memory(const char *filename, char **result)
 
 void read_data(MATCH *match, int &match_num,
                IPOINT *kp0, IPOINT *kp1,
-               FLOAT &fx, FLOAT &fy, FLOAT &cx, FLOAT &cy, FLOAT *depth, int idx)
+               FLOAT &fx, FLOAT &fy, FLOAT &cx, FLOAT &cy,
+               FLOAT *depth, char *data_dir, int idx)
 {
     cout << endl;
 
     FILE *fp;
 
-    char *match_name = new char[100];
-    char *match_num_name = new char[100];
-    char *kp0_name = new char[100];
-    char *kp1_name = new char[100];
-    char *depth_name = new char[100];
+    char *match_dir = new char[100];
+    char *match_num_dir = new char[100];
+    char *kp0_dir = new char[100];
+    char *kp1_dir = new char[100];
+    char *depth_dir = new char[100];
+    char *k_dir = new char[100];
 
-    sprintf(match_name, "../../../testdata/K_FeatureTracking/Matches_iteration%d.txt", idx);
-    sprintf(match_num_name, "../../../testdata/K_FeatureTracking/Detected_Matches_iteration%d.txt", idx);
-    sprintf(kp0_name, "../../../testdata/K_FeatureExtraction/KP0_iteration%d.txt", idx);
-    sprintf(kp1_name, "../../../testdata/K_FeatureExtraction/KP1_iteration%d.txt", idx);
-    sprintf(depth_name, "../../../testdata/K_StereoMatching/Depth_iteration%d.txt", idx);
-    /*sprintf(match_name, "../../../testdata/hls_same/match_%d.txt", idx);
-        sprintf(kp0_name, "../../../testdata/hls_same/KP0_iteration%d.txt", idx);
-        sprintf(kp1_name, "../../../testdata/hls_same/KP1_iteration%d.txt", idx);
-        sprintf(depth_name, "../../../testdata/hls_same/Depth_iteration%d.txt", idx);*/
+    sprintf(match_dir, "%s/Matches_iteration%d.txt", data_dir, idx);
+    sprintf(match_num_dir, "%s/Detected_Matches_iteration%d.txt", data_dir, idx);
+    sprintf(kp0_dir, "%s/KP0_iteration%d.txt", data_dir, idx);
+    sprintf(kp1_dir, "%s/KP1_iteration%d.txt", data_dir, idx);
+    sprintf(depth_dir, "%s/Depth_iteration%d.txt", data_dir, idx);
+    sprintf(k_dir, "%s/k.txt", data_dir);
 
     cout << "\t--- Reading Matched Index" << endl;
 
-    fp = fopen(match_num_name, "r");
+    fp = fopen(match_num_dir, "r");
+    if (fp == NULL)
+    {
+        cout << "Error opening file " << match_num_dir << endl;
+        return;
+    }
     fscanf(fp, "%d", &match_num);
     fclose(fp);
 
-    fp = fopen(match_name, "r");
+    fp = fopen(match_dir, "r");
+    if (fp == NULL)
+    {
+        cout << "Error opening file " << match_dir << endl;
+        return;
+    }
     for (int i = 0; i < match_num; i++)
     {
         int m, n;
@@ -892,7 +920,12 @@ void read_data(MATCH *match, int &match_num,
     fclose(fp);
 
     cout << "\t--- Reading Keypoint0" << endl;
-    fp = fopen(kp0_name, "r");
+    fp = fopen(kp0_dir, "r");
+    if (fp == NULL)
+    {
+        cout << "Error opening file " << kp0_dir << endl;
+        return;
+    }
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
         FLOAT m, n;
@@ -903,7 +936,12 @@ void read_data(MATCH *match, int &match_num,
     fclose(fp);
 
     cout << "\t--- Reading Keypoint1" << endl;
-    fp = fopen(kp1_name, "r");
+    fp = fopen(kp1_dir, "r");
+    if (fp == NULL)
+    {
+        cout << "Error opening file " << kp1_dir << endl;
+        return;
+    }
     for (int i = 0; i < MAX_KEYPOINT_NUM; i++)
     {
         FLOAT m, n;
@@ -914,12 +952,22 @@ void read_data(MATCH *match, int &match_num,
     fclose(fp);
 
     cout << "\t--- Reading Calibration Matix" << endl;
-    fp = fopen("../../../testdata/k.txt", "r");
+    fp = fopen(k_dir, "r");
+    if (fp == NULL)
+    {
+        cout << "Error opening file " << k_dir << endl;
+        return;
+    }
     fscanf(fp, "%f %f %f %f", &fx, &cx, &fy, &cy);
     fclose(fp);
 
     cout << "\t--- Reading Depth Map" << endl;
-    fp = fopen(depth_name, "r");
+    fp = fopen(depth_dir, "r");
+    if (fp == NULL)
+    {
+        cout << "Error opening file " << depth_dir << endl;
+        return;
+    }
     for (int i = 0; i < IMAGE_HEIGTH; i++)
     {
         for (int j = 0; j < IMAGE_WIDTH; j++)
@@ -932,7 +980,7 @@ void read_data(MATCH *match, int &match_num,
     fclose(fp);
 }
 
-void display_output(FLOAT rmat[9], FLOAT tvec[3])
+void display_store_output(FLOAT rmat[9], FLOAT tvec[3], int idx, char *output_dir)
 {
     cout << "rmat" << endl;
     for (int j = 0; j < 3; j++)
@@ -952,16 +1000,22 @@ void display_output(FLOAT rmat[9], FLOAT tvec[3])
     }
     cout << endl
          << endl;
-}
 
-void store_output(FLOAT rmat[9], FLOAT tvec[3], int index)
-{
-    char output_dir[50];
-    sprintf(output_dir, "../../../output/out_%d.txt", index);
+    sprintf(output_dir, "%s/R_t_%d.txt", output_dir, idx);
     FILE *fp = fopen(output_dir, "w");
-    for (int i = 0; i < 9; i++)
-        fprintf(fp, "%f\n", rmat[i]);
+    if (fp == NULL)
+    {
+        cout << "Error opening file " << output_dir << endl;
+        return;
+    }
+    
     for (int i = 0; i < 3; i++)
-        fprintf(fp, "%f\n", tvec[i]);
+    {
+        for (int j = 0; j < 3; j++)
+            fprintf(fp, "%f ", rmat[i * 3 + j]);
+        fprintf(fp, "\n");
+    }
+    for (int i = 0; i < 3; i++)
+        fprintf(fp, "%f ", tvec[i]);
     fclose(fp);
 }
