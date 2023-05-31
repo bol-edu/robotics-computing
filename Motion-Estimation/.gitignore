@@ -1,3 +1,4 @@
 *.exe
 .vscode
 *.txt
+!program/testdata/*.txt
