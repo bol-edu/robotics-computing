@@ -31,7 +31,8 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
 
 - ### Pure (self-contained) C/C++ code
     透過改寫使其完全無引用 OpenCV library。
-     [c-src_self-contain](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src_self-contain)
+    
+    [c-src_self-contain](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src_self-contain)
 
 ## On Vitis_hls
    到 Vitis_HLS 的環境上運行，依序跑過以下三個階段並驗證正確性，需適當改寫程式碼並加上 pragma 使其符合 hls 的規則並使其可合成為硬體。
