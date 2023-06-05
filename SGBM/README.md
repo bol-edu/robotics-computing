@@ -25,6 +25,7 @@ L為當前路徑累積的代價函數，P1、P2為圖元點與相鄰點視差存
 <img width="471" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/f8483508-672a-46dc-9348-c79b68d3ce55">
 
 - ### Pure (self-contained) C/C++ code
+* [c-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src)
 - ### Synthesis
 - ### Co-sim
 
