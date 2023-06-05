@@ -22,7 +22,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     1. 利用參數來調整最後計算出的結果
 
 ## Parameters
-    <img width="471" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/f8483508-672a-46dc-9348-c79b68d3ce55">
+   <img width="471" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/f8483508-672a-46dc-9348-c79b68d3ce55">
 
 ## On Visual Studio
 - ### Original C++ code
