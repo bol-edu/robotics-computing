@@ -21,30 +21,30 @@ L為當前路徑累積的代價函數，P1、P2為圖元點與相鄰點視差存
 - ### disparity refinement (視差改良)後處理
     1. 利用參數來調整最後計算出的結果
 
-- ### Parameters
+- ## Parameters
 <img width="471" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/f8483508-672a-46dc-9348-c79b68d3ce55">
 
-- ### On Visual Studio
-- #### Original C++ code
+- ## On Visual Studio
+- ### Original C++ code
     從OpenCV中整理出與SGBM演算法相關的程式碼，並進一步進行簡化，但仍有include到OpenCV library的函式。
 [c-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src)
 
-- #### Pure (self-contained) C/C++ code
+- ### Pure (self-contained) C/C++ code
     透過改寫使其完全無引用OpenCV library。
 [c-src_self-contain](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src_self-contain)
 
-- ### On Vitis_hls
-- #### C-simulation
+- ## On Vitis_hls
+- ### C-simulation
 [hls-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-src)
 
-- #### Synthesis
+- ### Synthesis
 [hls-syn](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-syn)
 
-- #### Co-simulation
+- ### Co-simulation
 [hls-cosim](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-cosim)
 
-- ### On Vitis IDE (FPGA)
-- #### Optimization
+- ## On Vitis IDE (FPGA)
+- ### Optimization
 [hardware](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hardware)
 
 
