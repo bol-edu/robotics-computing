@@ -1,6 +1,6 @@
 # Stereo Matching
 SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於立體視覺和深度估計的演算法，它可以在左右相機圖像之間進行視差計算(位移)。SGBM 是一種基於區塊匹配的演算法，在左右圖像中匹配特定大小的區塊，並計算每個區塊在另一個圖像中的對應區塊的相似度，以確定每個像素的視差值。且會考慮每個像素的整個代價（cost）圖，並將其與經過平滑處理的代價圖進行比較，以選擇最佳匹配(WTA)。
-![](https://i.imgur.com/YB4czKv.png)
+<img width="384" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/c4eaf86f-6ba9-4b8d-9fb2-3d9dff1056ec">
 
 - ### 輸入/輸出
     輸入 : 將左右兩張圖片以及相機的 k、t、r 參數讀進來
@@ -11,9 +11,8 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     3. 將上面兩步的代價值進行融合。
     4. 對上述步驟得到的代價值進行成塊處理，在SGBM演算法中，成塊計算就是就是對每個圖元的代價值用周圍鄰域代價值的總和來代替。
 - ### cost aggregation (代價聚合) 
-![](https://i.imgur.com/GsnBGvV.png)
-![](https://i.imgur.com/evrtMXA.png =40%)
-![](https://i.imgur.com/GeZZkEz.png)
+<img width="478" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/28a0837d-21b5-400c-8393-a4e6eafb9c6f">
+
 
 L為當前路徑累積的代價函數，P1、P2為圖元點與相鄰點視差存在較小和較大差異情況下的平滑懲罰(P1<P2)，第三項是為了消除各個方向路徑長度不同造成的影響。將所有r方向的匹配代價相加得到總的匹配代價(代價聚合)。
 - ### disparity computation/optimization (視差計算或優化)
