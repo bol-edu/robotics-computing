@@ -27,6 +27,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
 ## On Visual Studio
 - ### Original C++ code
     從 OpenCV 中整理出與 SGBM 演算法相關的程式碼，並進一步進行簡化，但仍有 include 到 OpenCV library 的函式。
+    
     [c-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src)
 
 - ### Pure (self-contained) C/C++ code
@@ -52,10 +53,12 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     
 ## development log
 在以下資料夾中，有記錄了一些我在此次專題製作過程中遇到的問題及最後的解決辦法，另外，也有 SGBM 演算法的相關步驟流程介紹。
-    [ppt](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt)
+    
+   [ppt](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt)
     
 ## makefile and .xclbin file
 在以下資料夾中，有 Makefile 及 燒錄的 xclbin file，還有運行時所需的相關檔案。
+   
    [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program)
 
 
