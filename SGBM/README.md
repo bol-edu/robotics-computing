@@ -27,25 +27,25 @@ L為當前路徑累積的代價函數，P1、P2為圖元點與相鄰點視差存
 - ## On Visual Studio
 - ### Original C++ code
     從OpenCV中整理出與SGBM演算法相關的程式碼，並進一步進行簡化，但仍有include到OpenCV library的函式。
-[c-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src)
+    [c-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src)
 
 - ### Pure (self-contained) C/C++ code
     透過改寫使其完全無引用OpenCV library。
-[c-src_self-contain](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src_self-contain)
+    [c-src_self-contain](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src_self-contain)
 
 - ## On Vitis_hls
 - ### C-simulation
-[hls-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-src)
+    [hls-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-src)
 
 - ### Synthesis
-[hls-syn](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-syn)
+    [hls-syn](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-syn)
 
 - ### Co-simulation
-[hls-cosim](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-cosim)
+    [hls-cosim](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-cosim)
 
 - ## On Vitis IDE (FPGA)
 - ### Optimization
-[hardware](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hardware)
+    [hardware](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hardware)
 
 
 
