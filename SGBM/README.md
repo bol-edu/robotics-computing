@@ -12,8 +12,8 @@ SGBM 演算法是一種用於立體視覺和深度估計的演算法，它可以
     4. 對上述步驟得到的代價值進行成塊處理，在SGBM演算法中，成塊計算就是就是對每個圖元的代價值用周圍鄰域代價值的總和來代替。
 - ### cost aggregation (代價聚合) 
 ![](https://i.imgur.com/GsnBGvV.png)
-![](https://i.imgur.com/evrtMXA.png =40%x)
-![](https://i.imgur.com/GeZZkEz.png =80%x)
+![](https://i.imgur.com/evrtMXA.png)
+![](https://i.imgur.com/GeZZkEz.png)
 
 L為當前路徑累積的代價函數，P1、P2為圖元點與相鄰點視差存在較小和較大差異情況下的平滑懲罰(P1<P2)，第三項是為了消除各個方向路徑長度不同造成的影響。將所有r方向的匹配代價相加得到總的匹配代價(代價聚合)。
 - ### disparity computation/optimization (視差計算或優化)
