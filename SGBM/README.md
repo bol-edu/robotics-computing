@@ -48,6 +48,10 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
    到 Vitis ide 環境中實際跑硬體合成、燒錄並產生出 bitstream (.xclbin file)。
 - ### Optimization
     [hardware](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hardware)
+    
+## development log
+在這個 ppt 中，有記錄了一些我在此次專題製作過程中遇到的問題及最後的解決辦法，另外，也有相關步驟流程介紹。
+    [development_log](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt/development_log)
 
 
 
