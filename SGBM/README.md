@@ -54,6 +54,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     [ppt](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt)
     
 ## makefile and .xclbin file
+在以下資料夾中，有 Makefile 及 燒錄的 xclbin file，還有運行時所需的相關檔案。
    [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program)
 
 
