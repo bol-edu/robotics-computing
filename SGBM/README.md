@@ -21,10 +21,10 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
 - ### disparity refinement (視差改良)後處理
     1. 利用參數來調整最後計算出的結果
 
-- ## Parameters
+## Parameters
     <img width="471" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/f8483508-672a-46dc-9348-c79b68d3ce55">
 
-- ## On Visual Studio
+## On Visual Studio
 - ### Original C++ code
     從OpenCV中整理出與SGBM演算法相關的程式碼，並進一步進行簡化，但仍有include到OpenCV library的函式。
     [c-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src)
@@ -33,7 +33,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     透過改寫使其完全無引用OpenCV library。
     [c-src_self-contain](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src_self-contain)
 
-- ## On Vitis_hls
+## On Vitis_hls
 - ### C-simulation
     [hls-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-src)
 
@@ -43,7 +43,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
 - ### Co-simulation
     [hls-cosim](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-cosim)
 
-- ## On Vitis IDE (FPGA)
+## On Vitis IDE (FPGA)
 - ### Optimization
     [hardware](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hardware)
 
