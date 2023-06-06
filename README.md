@@ -18,7 +18,6 @@ Most research and implementations in the field of VO focus on specific algorithm
 
 To begin, we selected a Python OpenCV tutorial on VO as a template and re-implemented it in C/C++ form with HLS synthesis accessibility. We removed all external library dependencies and eliminated CPU architecture-specific coding styles such as dynamic memory allocation and double-level pointers.
 
-![](.doc/img/alg.png)
 ![](./doc/img/algorithm%20flow.gif)
 > The VO algorithm is divided into four sub-algorithms: Stereo Matching, Feature Extraction, Feature Tracking, and Motion Estimation. 
 
@@ -78,4 +77,20 @@ Please follow the detailed [tutorial](https://hackmd.io/@PVeFLV0TSLusVkTPYj7DuQ/
    Please download the [dataset.zip](https://drive.google.com/file/d/10q1iml4rOL9GB1Ew3EcNF0lm_c7B5Nf_/view?usp=drivesdk) from drive and unzip.
 
 ## Quick Start
+### Prepare the Environment
+
+### Build Bitstream from Each Kernel Function
+
+### Build Whole System usng Bitstream
+
+### Run
+
+### Flags
+
+
+
+## Result
+
+
+## Appendix
 
