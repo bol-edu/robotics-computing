@@ -3,7 +3,7 @@
 
 ![](./doc/img/algorithm%20flow.gif)
 
-This repository contains the related work for the NTHU 11110EE 390000 / 11120EE 391000 Special Topic on Implementation (I)/(II) courses, specifically from ([Team A288](https://implementation.ee.nthu.edu.tw/competition/groups/111/2)). 
+This repository contains the related work for the NTHU 11110EE 390000 / 11120EE 391000 Special Topic on Implementation (I)/(II) courses, specifically from [Team A288](https://implementation.ee.nthu.edu.tw/competition/groups/111/2). 
 
 The contributors are as follows:
 
