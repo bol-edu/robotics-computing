@@ -3,13 +3,16 @@
 
 ![](./doc/img/algorithm%20flow.gif)
 
-This repository contains the related work for the NTHU 11110EE 390000 / 11120EE 391000 Special Topic on Implementation (I)/(II) courses, specifically from Team A288. The contributors are as follows:
+This repository contains the related work for the NTHU 11110EE 390000 / 11120EE 391000 Special Topic on Implementation (I)/(II) courses, specifically from ([Team A288](https://implementation.ee.nthu.edu.tw/competition/groups/111/2)). 
 
-- 林奕杰 
-- 李承澔
-- 鄧文瑜
-- 林妤諠
-- 郭朝恩
+The contributors are as follows:
+
+- [林奕杰] 
+- [李承澔](https://github.com/Charlee0207)
+- [鄧文瑜](https://github.com/kevinteng9023)
+- [林妤諠](https://github.com/Yuhsuanlinn)
+- [郭朝恩](https://github.com/ShinjuGoenji)
+
 
 Most research and implementations in the field of VO focus on specific algorithms such as Stereo Matching, Feature Extraction, Feature Tracking (Matching), and Motion Estimation. In this project, we propose that these four stages of the VO algorithm can be implemented and executed on the Xilinx Alveo™ U50 FPGA board, thereby exploring the possibility of accelerating these algorithms in comparison to traditional CPU-based approaches.
 
@@ -74,3 +77,4 @@ Please follow the detailed [tutorial](https://hackmd.io/@PVeFLV0TSLusVkTPYj7DuQ/
    ```
    Please download the [dataset.zip](https://drive.google.com/file/d/10q1iml4rOL9GB1Ew3EcNF0lm_c7B5Nf_/view?usp=drivesdk) from drive and unzip.
 
+## Q
