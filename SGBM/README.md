@@ -52,19 +52,19 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
 ## development log
 在以下資料夾的 [ppt](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt) 中，有記錄了一些我在此次專題製作過程中遇到的問題及最後的解決辦法，另外，也有 SGBM 演算法的相關步驟流程介紹。
     
-## makefile
-   [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program)
+## Makefile
+   此 [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program) 資料夾中有 Makefile 檔案。
    
 - ### Build Flow
-- #### Build the program
+    1. Build the program
 ```
     make all TARGET=hw PLATFORM=xilinx_u50_gen3x16_xdma_5_202210_1 CXXFLAGS=-I/usr/local/include/opencv4
 ```
-- #### Run the program
+   2. Run the program
 ```
     make run TARGET=hw PLATFORM=xilinx_u50_gen3x16_xdma_5_202210_1
 ```
-- #### modify the arguments
+   3. modify the arguments
 
 
 
