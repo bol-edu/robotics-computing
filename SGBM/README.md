@@ -50,9 +50,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     [hardware](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hardware)
     
 ## development log
-在以下資料夾的 ppt 中，有記錄了一些我在此次專題製作過程中遇到的問題及最後的解決辦法，另外，也有 SGBM 演算法的相關步驟流程介紹。
-    
-   [ppt](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt)
+在以下資料夾的 [ppt](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt) 中，有記錄了一些我在此次專題製作過程中遇到的問題及最後的解決辦法，另外，也有 SGBM 演算法的相關步驟流程介紹。
     
 ## makefile
    [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program)
