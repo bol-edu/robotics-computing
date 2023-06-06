@@ -5,7 +5,7 @@ This repository contains the related work for the NTHU 11110EE 390000 / 11120EE 
 
 The contributors are as follows:
 
-- [林奕杰] 
+- [林奕杰](https://github.com/yichiehqq)
 - [李承澔](https://github.com/Charlee0207)
 - [鄧文瑜](https://github.com/kevinteng9023)
 - [林妤諠](https://github.com/Yuhsuanlinn)
