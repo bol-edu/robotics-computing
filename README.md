@@ -22,7 +22,7 @@ To begin, we selected a Python OpenCV tutorial on VO as a template and re-implem
 > The VO algorithm is divided into four sub-algorithms: Stereo Matching, Feature Extraction, Feature Tracking, and Motion Estimation. 
 
 
-![](.doc/img/system_arch.png)
+![](./doc/img/system_arch.png)
 > Each sub-algorithm corresponds to a kernel.
 
 In order to properly verify the functionality of each kernel, we included four compile modes to run the VO program. In each compile mode, the corresponding kernel function runs on the programmable logic (PL) side of the FPGA, while the other three functions run on the processing system (PS) side (the host). This ensures that each individual kernel behaves correctly and allows us to compare the execution time between the FPGA and the CPU.
@@ -81,7 +81,7 @@ Please follow the detailed [tutorial](https://hackmd.io/@PVeFLV0TSLusVkTPYj7DuQ/
 
 ### Build Bitstream from Each Kernel Function
 
-### Build Whole System usng Bitstream
+### Build Whole System using Bitstream
 
 ### Run
 
