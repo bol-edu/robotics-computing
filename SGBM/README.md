@@ -3,7 +3,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     <img width="384" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/c4eaf86f-6ba9-4b8d-9fb2-3d9dff1056ec">
 
 - ### 輸入/輸出
-    輸入 : 將左右兩張圖片以及相機的 k、t、r 參數讀進來
+    輸入 : 將左右兩張圖片以及相機的 k、t、r 參數讀進來     
     輸出 : 經過計算後輸出深度
 - ### matching cost computation (匹配代價計算)預處理
     1. 輸入圖像經過 SobelX 處理后，計算 BT 代價。
@@ -36,7 +36,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     [c-src_self-contain](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/c-src_self-contain)
 
 ## On Vitis_hls
-   到 Vitis_HLS 的環境上運行，依序跑過以下三個階段並驗證正確性，需適當改寫程式碼並加上 pragma 使其符合 hls 的規則並使其可合成為硬體。
+   到 Vitis_HLS 的環境上運行，依序跑過以下三個階段並驗證正確性，且透過改寫程式碼並加上 pragma 使其符合 hls 的規則並使其可合成為硬體。
 - ### C-simulation
     [hls-src](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hls-src)
 
@@ -52,12 +52,12 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     [hardware](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/hardware)
     
 ## development log
-在以下資料夾中，有記錄了一些我在此次專題製作過程中遇到的問題及最後的解決辦法，另外，也有 SGBM 演算法的相關步驟流程介紹。
+在以下資料夾的 ppt 中，有記錄了一些我在此次專題製作過程中遇到的問題及最後的解決辦法，另外，也有 SGBM 演算法的相關步驟流程介紹。
     
    [ppt](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/ppt)
     
 ## makefile and .xclbin file
-在以下資料夾中，有 Makefile 及 燒錄的 xclbin file，還有運行時所需的相關檔案。
+在以下資料夾中，有 Makefile 及 燒錄好的 xclbin file，還有運行時所需的相關檔案。
    
    [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program)
 
