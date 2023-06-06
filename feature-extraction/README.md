@@ -42,3 +42,14 @@
 
 能夠合成，且過初步優化。
 * [src_optimized](https://github.com/bol-edu/robotics-computing/tree/main/feature-extraction/src_optimized)
+
+## Development log
+
+記錄開發過程遇到的問題及最後的解決辦法。
+* [ppt](https://github.com/bol-edu/robotics-computing/tree/main/feature-extraction/ppt)
+
+## makefile and .xclbin file
+
+透過makefile運行feature-extraction，以及燒錄出來的bitstream。
+* [program](https://github.com/bol-edu/robotics-computing/tree/main/feature-extraction/program)
+* [xclbin](https://github.com/bol-edu/robotics-computing/tree/main/feature-extraction/xclbin)
