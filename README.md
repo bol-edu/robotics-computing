@@ -1,8 +1,6 @@
 # FPGA Implementation of Visual Odometry using High-Level Synthesis
 [![](https://img.shields.io/badge/vo--hls-report-brightgreen)](https://implementation.ee.nthu.edu.tw/competition/groups/d654e3e1-c800-43e4-8583-01de78e7f9eb/attachments/summary?download=0)
 
-![](./doc/img/algorithm%20flow.gif)
-
 This repository contains the related work for the NTHU 11110EE 390000 / 11120EE 391000 Special Topic on Implementation (I)/(II) courses, specifically from [Team A288](https://implementation.ee.nthu.edu.tw/competition/groups/111/2). 
 
 The contributors are as follows:
@@ -20,10 +18,12 @@ Most research and implementations in the field of VO focus on specific algorithm
 
 To begin, we selected a Python OpenCV tutorial on VO as a template and re-implemented it in C/C++ form with HLS synthesis accessibility. We removed all external library dependencies and eliminated CPU architecture-specific coding styles such as dynamic memory allocation and double-level pointers.
 
-![](https://github.com/bol-edu/robotics-computing/blob/main/doc/img/alg.png)
+![](.doc/img/alg.png)
+![](./doc/img/algorithm%20flow.gif)
 > The VO algorithm is divided into four sub-algorithms: Stereo Matching, Feature Extraction, Feature Tracking, and Motion Estimation. 
 
-![](https://github.com/bol-edu/robotics-computing/blob/main/doc/img/system_arch.png)
+
+![](.doc/img/system_arch.png)
 > Each sub-algorithm corresponds to a kernel.
 
 In order to properly verify the functionality of each kernel, we included four compile modes to run the VO program. In each compile mode, the corresponding kernel function runs on the programmable logic (PL) side of the FPGA, while the other three functions run on the processing system (PS) side (the host). This ensures that each individual kernel behaves correctly and allows us to compare the execution time between the FPGA and the CPU.
@@ -77,4 +77,5 @@ Please follow the detailed [tutorial](https://hackmd.io/@PVeFLV0TSLusVkTPYj7DuQ/
    ```
    Please download the [dataset.zip](https://drive.google.com/file/d/10q1iml4rOL9GB1Ew3EcNF0lm_c7B5Nf_/view?usp=drivesdk) from drive and unzip.
 
-## Q
+## Quick Start
+
