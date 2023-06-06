@@ -3,8 +3,8 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     <img width="384" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/c4eaf86f-6ba9-4b8d-9fb2-3d9dff1056ec">
 
 - ### 輸入/輸出
-    輸入 : 將左右兩張圖片以及相機的 k、t、r 參數讀進來     
-    輸出 : 經過計算後輸出深度
+    輸入 : 將左右兩張圖片以及相機的 k、t、r 參數讀進來。     
+    輸出 : 經過計算後輸出深度。
 - ### matching cost computation (匹配代價計算)預處理
     1. 輸入圖像經過 SobelX 處理后，計算 BT 代價。
     2. 輸入圖像直接計算 BT 代價值。
