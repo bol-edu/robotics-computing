@@ -3,9 +3,6 @@
 
 ![](./doc/img/algorithm%20flow.gif)
 
-The goal of this project is to utilize High-Level Synthesis (HLS) technology for hardware acceleration to increase development efficiency and simplify the design process. Compared to traditional hardware description languages such as Verilog and VHDL, HLS can quickly translate high-level programming languages such as C, C++, SystemC into RTL, and generate higher-performance hardware architectures through different optimizations, allowing designers to develop complex hardware systems more quickly. \
-In this project, we use [Xilinx Vitis](https://www.xilinx.com/products/design-tools/vitis/vitis-platform.html) development system to rewrite algorithms in OpenCV and implement the [Visual Odometry](https://github.com/FoamoftheSea/KITTI_visual_odometry.git) (VO) algorithm using HLS technology. We will use knowledge of computer vision, system design, hardware design, HLS development process, and HLS technology to achieve efficient real-time computation of the VO accelerator on FPGA.
-
 This repository contains the related work for the NTHU 11110EE 390000 / 11120EE 391000 Special Topic on Implementation (I)/(II) courses, specifically from Team A288. The contributors are as follows:
 
 - 林奕杰 
@@ -20,18 +17,60 @@ Most research and implementations in the field of VO focus on specific algorithm
 
 To begin, we selected a Python OpenCV tutorial on VO as a template and re-implemented it in C/C++ form with HLS synthesis accessibility. We removed all external library dependencies and eliminated CPU architecture-specific coding styles such as dynamic memory allocation and double-level pointers.
 
-The VO algorithm is divided into four sub-algorithms: Stereo Matching, Feature Extraction, Feature Tracking, and Motion Estimation. Each sub-algorithm corresponds to a kernel.
+![](https://github.com/bol-edu/robotics-computing/blob/main/doc/img/alg.png)
+> The VO algorithm is divided into four sub-algorithms: Stereo Matching, Feature Extraction, Feature Tracking, and Motion Estimation. 
+
+![](https://github.com/bol-edu/robotics-computing/blob/main/doc/img/system_arch.png)
+> Each sub-algorithm corresponds to a kernel.
 
 In order to properly verify the functionality of each kernel, we included four compile modes to run the VO program. In each compile mode, the corresponding kernel function runs on the programmable logic (PL) side of the FPGA, while the other three functions run on the processing system (PS) side (the host). This ensures that each individual kernel behaves correctly and allows us to compare the execution time between the FPGA and the CPU.
 
+## Toolchain and Prerequisites
+The project has been tested in the following environment:
+- CPU: 11th Gen Intel(R) Core(TM) i7-11700 @ 2.50GHz
+- RAM: 49112592kB DDR4
+- OS: Ubuntu 20.04.4 LTS
+- FPGA: Xilinx Alveo™ U50 FPGA
+- Vitis Suite Version: 2022.1
+- OpenCV Version: 4.4.0
 
+Prerequisites:
+- Ubuntu 20.04 (or a higher version certified with Vitis)
+- Xilinx Vitis Suite 2022.1
+- Xilinx® Runtime (XRT)
+- CMake 3.5+
+- OpenCV-4.4.0 x86 library
+- libOpenCL.so
+- libpng library (optional)
 
-## Directory
-```
-├── SGBM                    # stereo matching kernel
-├── feature-extraction      # feature extraction kernel
-├── feature-matching        # feature matching kernel
-├── motion-estimation       # motion estimation kernel
-├── host                    # host program
-└── doc                     # reference files
-```
+Please follow the detailed [tutorial](https://hackmd.io/@PVeFLV0TSLusVkTPYj7DuQ/S15_qtAio) for setup instructions.
+
+## Directory Structure
+   ```
+    ${ProjectFolder}
+      |- ${HostFolder}
+      |   |- src
+      |   |   |- C_FeatureExtraction  
+      |   |   |- C_FeatureTracking
+      |   |   |- C_MotionEstimation
+      |   |   |- C_StereoMatching
+      |   |   |- K_FeatureExtraction
+      |   |   |- K_FeatureTracking
+      |   |   |- K_MotionEstimation
+      |   \   \- K_StereoMatching
+      |  
+      |- output  
+      |   |- C_FeatureExtraction  
+      |   |- C_FeatureTracking
+      |   |- C_MotionEstimation
+      |   |- C_StereoMatching
+      |   |- K_FeatureExtraction
+      |   |- K_FeatureTracking
+      |   |- K_MotionEstimation
+      |   \- K_StereoMatching
+      |- dataset
+      |   |- poses
+      \   \- sequences 
+   ```
+   Please download the [dataset.zip](https://drive.google.com/file/d/10q1iml4rOL9GB1Ew3EcNF0lm_c7B5Nf_/view?usp=drivesdk) from drive and unzip.
+
