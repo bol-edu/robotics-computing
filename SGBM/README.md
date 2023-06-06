@@ -12,8 +12,6 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
     4. 對上述步驟得到的代價值進行成塊處理，在 SGBM 演算法中，成塊計算就是就是對每個圖元的代價值用周圍鄰域代價值的總和來代替。
 - ### cost aggregation (代價聚合) 
     <img width="478" alt="image" src="https://github.com/bol-edu/robotics-computing/assets/99881755/28a0837d-21b5-400c-8393-a4e6eafb9c6f">
-
-
     L為當前路徑累積的代價函數，P1、P2為圖元點與相鄰點視差存在較小和較大差異情況下的平滑懲罰(P1<P2)，第三項是為了消除各個方向路徑長度不同造成的影響。將所有r方向的匹配代價相加得到總的匹配代價(代價聚合)。
 - ### disparity computation/optimization (視差計算或優化)
     1. sgbm演算法中關於視差的選擇，一般是直接選擇使得聚合代價最小的視差。
@@ -59,16 +57,16 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
 ## makefile
    [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program)
    
-## Build Flow
-- ### Build the program
+- ### Build Flow
+- #### Build the program
 ```
     make all TARGET=hw PLATFORM=xilinx_u50_gen3x16_xdma_5_202210_1 CXXFLAGS=-I/usr/local/include/opencv4
 ```
-- ### Run the program
+- #### Run the program
 ```
     make run TARGET=hw PLATFORM=xilinx_u50_gen3x16_xdma_5_202210_1
 ```
-- ### modify the arguments
+- #### modify the arguments
 
 
 
