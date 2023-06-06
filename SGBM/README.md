@@ -60,7 +60,7 @@ SGBM 是「Semi-Global Block Matching」的縮寫，此演算法是一種用於�
    [program](https://github.com/bol-edu/robotics-computing/tree/main/SGBM/program)
    
 ## Build Flow
-    - ### build 指令
+    - build 指令
     make all TARGET=hw PLATFORM=xilinx_u50_gen3x16_xdma_5_202210_1 CXXFLAGS=-I/usr/local/include/opencv4
 
 
