@@ -1,14 +1,35 @@
-# **Motion Estimation**
-Estimating the relative motion between camera poses using depth map and matched keypoints. This kernel is using **RANSAC-EPnP** (RANdom SAmple Consensus, Efficient Perspective-n-Point) and **Iterative PnP** (Direct Linear Transform).
+# Motion Estimation
+Estimating the relative motion between camera poses using depth map and matched keypoints. This kernel is using **RANSAC-EPnP** (RANdom SAmple Consensus, Efficient Perspective-n-Point) and **Iterative PnP** (Direct Linear Transform & Levenberg–Marquardt).
+
+## How to Build
+1. ```cd```to directory [program](./program/). \
+```
+cd ./motion-estimation/program
+```
+2. ```make```the host executable program & xclbin files using Makefile. \
+```
+make all TARGET=hw
+```
+3. As long as the host program & kernel are compiled, you may test the functionality of the kernel, using [test data](./program/testdata/). \
+Run the program using
+```
+make run TARGET=hw
+```
+4. (option) You may modify the arguements by [args.mk](./program/args.mk)
 
 
-## **Design Flow**
+## Design Flow
 - [Algorithms](#algorithms)    
 - [Pure C/C++ code](./c-src)
 - [HLS code](./hls-src/)
 - [Reference](#reference)
 
-## **Algorithms**
+## Algorithms
+
+<p align="center">
+  <img src="./img/Motion%20Estimation%20block%20diagram.png" />
+</p>
+
 The brief introduction can be found in the [slide](./doc/motion_estimation.pdf). You may also check out the [video](https://youtu.be/1_DqewUjm7Q).
 
 - ### What we have
@@ -28,7 +49,6 @@ The brief introduction can be found in the [slide](./doc/motion_estimation.pdf).
   Before doing the math part, we need to modify the input to match the requirement. Because we're using PnP, which solves relative motion cv problem by 2D-3D points. As a result, we project 1st left image's keypoints to 3D point through depth map and camera matrix. Also we align 2 sets of keypoints through matched index.
 
 <p align="center">
-  <img src="./img/Motion%20Estimation%20block%20diagram.png" />
   <img src="./img/EPnP%20block%20diagram.png" />
 </p>
 
