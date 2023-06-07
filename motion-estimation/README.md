@@ -115,7 +115,7 @@ make run TARGET=hw
 ## Algorithms
 
 <p align="center">
-  <img src="./img/Motion%20Estimation%20block%20diagram.png" />
+  <img src="./img/Motion%20Estimation%20block%20diagram.png" width="50%" />
 </p>
 
 The brief introduction can be found in the [slide](./doc/motion_estimation.pdf). You may also check out the [video](https://youtu.be/1_DqewUjm7Q).
