@@ -2,11 +2,11 @@
 Estimating the relative motion between camera poses using depth map and matched keypoints. This kernel is using **RANSAC-EPnP** (RANdom SAmple Consensus, Efficient Perspective-n-Point) and **Iterative PnP** (Direct Linear Transform & Levenberg–Marquardt).
 
 ## How to Build
-1. ```cd```to directory [program](./program/). \
+1. ```cd``` to directory [program](./program/). \
 ```
 cd ./motion-estimation/program
 ```
-2. ```make```the host executable program & xclbin files using Makefile. \
+2. ```make``` the host executable program & xclbin files using Makefile. \
 ```
 make all TARGET=hw
 ```
