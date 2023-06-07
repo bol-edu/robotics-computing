@@ -115,7 +115,7 @@ make run TARGET=hw
 ## Algorithms
 
 <p>
-  <img src="./img/Motion%20Estimation%20block%20diagram.png" width="60%" />
+  <img src="./doc/img/Motion%20Estimation%20block%20diagram.png" width="60%" />
 </p>
 
 The brief introduction can be found in the [slide](./doc/motion_estimation.pdf). You may also check out the [video](https://youtu.be/1_DqewUjm7Q).
@@ -137,7 +137,7 @@ The brief introduction can be found in the [slide](./doc/motion_estimation.pdf).
   Before doing the math part, we need to modify the input to match the requirement. Because we're using PnP, which solves relative motion cv problem by 2D-3D points. As a result, we project 1st left image's keypoints to 3D point through depth map and camera matrix. Also we align 2 sets of keypoints through matched index.
 
 <p>
-  <img src="./img/EPnP%20block%20diagram.png" />
+  <img src="./doc/img/EPnP%20block%20diagram.png" />
 </p>
 
 ## Pure C/C++ code
