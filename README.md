@@ -221,8 +221,11 @@ On Ubuntu the ICD library is packaged with the distribution. Install the followi
     ```
    
 Appendix
+
 `< path-to-opencv-lib-folder >` = `/usr/local/lib`
+
 `< path-to-opencv-include-folder >` = `/usr/local/include/opencv4`
+
 `< path-to-platform-directory >/< platform >.xpfm` = `/opt/xilinx/platforms/xilinx_u50_gen3x16_xdma_5_202210_1/xilinx_u50_gen3x16_xdma_5_202210_1.xpfm`
 
 
