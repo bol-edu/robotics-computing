@@ -48,8 +48,10 @@ Prerequisites:
 ## Setup Prerequisites
 ### 1. Xilinx Vitis Suite
 Install necessary dependencies before Vitis installation: 
-```sudo apt install libtinfo5 libncurses5 -y```
-And follow [offical installation guide](https://docs.xilinx.com/r/2022.1-English/ug1400-vitis-embedded/Installation-Requirements)
+```
+$ sudo apt install libtinfo5 libncurses5 -y
+```
+And follow the offical installation [guide](https://docs.xilinx.com/r/2022.1-English/ug1400-vitis-embedded/Installation-Requirements).
 
 ### 2. Xilinx® Runtime (XRT) 
 Install XRT environment and set up variables.
