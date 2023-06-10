@@ -38,14 +38,189 @@ The project has been tested in the following environment:
 
 Prerequisites:
 - Ubuntu 20.04 (or a higher version certified with Vitis)
-- Xilinx Vitis Suite 2022.1
+- Xilinx Vitis Suite 2022.1 (or a higher version)
 - Xilinx® Runtime (XRT)
 - CMake 3.5+
-- OpenCV-4.4.0 x86 library
+- OpenCV-4.4.0 x86 library (or a higher version certified with [Vitis Vision Library](https://github.com/Xilinx/Vitis_Libraries/tree/main/vision))
 - libOpenCL.so
 - libpng library (optional)
 
-Please follow the detailed [tutorial](https://hackmd.io/@PVeFLV0TSLusVkTPYj7DuQ/S15_qtAio) for setup instructions.
+## Setup Prerequisites
+### 1. Xilinx® Runtime (XRT) 
+Install XRT environment and set up variables.
+>  [Installing Xilinx Runtime and Platforms](https://docs.xilinx.com/r/en-US/ug1393-vitis-application-acceleration/Installing-Xilinx-Runtime-and-Platforms)
+
+</br>
+
+1. **[Go to Alveo U50 Package File Downloads](https://www.xilinx.com/products/boards-and-kits/alveo/u50.html#gettingStarted)**</br>
+Download and install them in order</br>
+`  Xilinx Runtime  `
+`  Deployment Target Platform  `
+`   Development Target Platform  `
+
+
+2. **Set up variables**</br>
+
+    Set up XILINX_VITIS and XILINX_VIVADO variables
+    ```
+    $ source <Vitis_install_path>/Vitis/2022.2/settings64.sh 
+    ``` 
+    Set up XILINX_XRT for data center platforms
+    ```  
+    $ source /opt/xilinx/xrt/setup.sh  
+    ```
+
+### 2. CMake
+Install the latest CMake (Make sure cmake version>3.5 before proceeding).
+>  [Ubuntu cmake 編譯安裝](https://shengyu7697.github.io/ubuntu-cmake/)
+>  [How to Install CMake on Ubuntu 20.04 LTS](https://vitux.com/how-to-install-cmake-on-ubuntu/
+
+1. **[Go to CMake File Downloads](https://cmake.org/download/)** </br>
+Download the source distribution `  cmake-<latest-version>.tar.gz  `
+</br>
+
+2. ****Remove previous CMake (If you have installed it before)***</br>
+    Remove cmake and cmake-qt-gui
+    ```
+    $ sudo apt purge cmake
+    ```
+    Remove cmake and other dependencies
+    ```
+    $ sudo apt autoremove cmake
+    ```
+
+3. **Install it** </br>
+    Extract it
+    ```
+    $ tar -zxvf cmake-<latest-version>.tar.gz
+    ```
+    Move to the extracted folder
+    ```
+    $ cd cmake-<latest-version>
+    ```
+    Run the following commands to compile and install
+    ```
+    $ ./bootstrap
+    $ make
+    $ sudo make install
+    ```
+    Check the installed CMace version
+    ```
+    $ cmake --version
+    ```
+
+### 3. OpenCV-4.4.0 x86 library
+Libraries **should not** be builded at shared folder!
+> [Install OpenCV-Python in Ubuntu](https://docs.opencv.org/4.4.0/d2/de6/tutorial_py_setup_in_ubuntu.html)
+
+
+1. **Building OpenCV from source**</br>
+    Required build dependencies 
+    ```
+    # CMake to configure the installation, GCC for compilation, Python-devel and Numpy for building Python bindings etc.
+    $ sudo apt-get install cmake
+    $ sudo apt-get install gcc g++
+
+    # to support python3:
+    $ sudo apt-get install python3-dev python3-numpy
+    
+    # GTK support for GUI features, Camera support (v4l), Media Support (ffmpeg, gstreamer) etc
+    $ sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev
+    $ sudo apt-get install libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev
+
+    # to support gtk3:
+    $ sudo apt-get install libgtk-3-dev
+    ```
+    We skip installation of 2 dependencies below: 
+    `sudo apt-get install python-dev python-numpy` `sudo apt-get install libgtk2.0-dev` 
+    
+    And install optional dependencies
+    ```
+    $ sudo apt-get install libpng-dev
+    $ sudo apt-get install libjpeg-dev
+    $ sudo apt-get install libopenexr-dev
+    $ sudo apt-get install libtiff-dev
+    $ sudo apt-get install libwebp-dev
+    ```
+
+3. **[Download OpenCV-4.4.0 Repository](https://github.com/opencv/opencv/tree/4.4.0)**</br>
+    Download whole repository into a folder named as `opencv`.</br>
+    
+    Open a terminal window and navigate to the downloaded `opencv` folder. 
+    Create a new "build" folder and navigate to it.
+    ```
+    $ mkdir build
+    $ cd build
+    ```
+4. **Configuring and Installing**</br>
+    Configuration of OpenCV library build (executed from build folder)
+    ```
+    $ cmake ../
+    ```
+    OpenCV defaults assume `Release` build type and installation path is `/usr/local`.</br>
+    
+    You should see these lines in your CMake output (they mean that Python is properly found):
+    ```
+    --   Python 3:
+    --     Interpreter:                 /usr/bin/python3.4 (ver 3.4.3)
+    --     Libraries:                   /usr/lib/x86_64-linux-gnu/libpython3.4m.so (ver 3.4.3)
+    --     numpy:                       /usr/lib/python3/dist-packages/numpy/core/include (ver 1.8.2)
+    --     packages path:               lib/python3.4/dist-packages
+    ```
+    Now build the files
+    ```
+    $ make
+    $ sudo make install
+    ```
+     All files are installed in `/usr/local/` folder. Open a terminal and try import `cv2`.
+     ```
+     import cv2 as cv
+    print(cv.__version__)
+    ```
+    
+    
+### 4. libOpenCL.so</br>
+
+> [OpenCL Installable Client Driver Loader](https://docs.xilinx.com/r/en-US/ug1393-vitis-application-acceleration/OpenCL-Installable-Client-Driver-Loader?tocId=rL1XqX3uRUq6DWvD71c6qQ)
+
+
+* **Ubuntu**</br>
+On Ubuntu the ICD library is packaged with the distribution. Install the following packages:
+    ```
+    $ sudo apt-get install ocl-icd-libopencl1
+    $ sudo apt-get install opencl-headers
+    $ sudo apt-get install ocl-icd-opencl-dev
+    ```
+    </br>
+    
+### 5. libpng library (optional)
+
+> [Official Repository Installation Guide](https://github.com/glennrp/libpng/blob/libpng16/INSTALL)
+> [How to install libpng-1.6.37.tar.xz in ubuntu 20.04?](https://askubuntu.com/questions/1267837/how-to-install-libpng-1-6-37-tar-xz-in-ubuntu-20-04)
+
+
+1. **[Download libpng Repository](https://github.com/glennrp/libpng)**</br>
+    Download whole repository into a temporary folder,
+    or type GitHub CLI command under a temporary folder
+    ```
+    $ gh repo clone glennrp/libpng
+    ```
+    
+2. **Configuring and Installing**</br>
+    ```
+    $ cd libpng
+    $ ./autogen.sh
+    $ ./configure --prefix=/usr/local/libpng
+    $ make check
+    $ sudo make install
+    ```
+   
+Appendix
+`< path-to-opencv-lib-folder >` = `/usr/local/lib`
+`< path-to-opencv-include-folder >` = `/usr/local/include/opencv4`
+`< path-to-platform-directory >/< platform >.xpfm` = `/opt/xilinx/platforms/xilinx_u50_gen3x16_xdma_5_202210_1/xilinx_u50_gen3x16_xdma_5_202210_1.xpfm`
+
+
 
 ## Directory Structure
    ```
