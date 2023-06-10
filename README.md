@@ -46,11 +46,14 @@ Prerequisites:
 - libpng library (optional)
 
 ## Setup Prerequisites
-### 1. Xilinx® Runtime (XRT) 
+### 1. Xilinx Vitis Suite
+Install necessary dependencies before Vitis installation: 
+```sudo apt install libtinfo5 libncurses5 -y```
+And follow [offical installation guide](https://docs.xilinx.com/r/2022.1-English/ug1400-vitis-embedded/Installation-Requirements)
+
+### 2. Xilinx® Runtime (XRT) 
 Install XRT environment and set up variables.
 >  [Installing Xilinx Runtime and Platforms](https://docs.xilinx.com/r/en-US/ug1393-vitis-application-acceleration/Installing-Xilinx-Runtime-and-Platforms)
-
-</br>
 
 1. **[Go to Alveo U50 Package File Downloads](https://www.xilinx.com/products/boards-and-kits/alveo/u50.html#gettingStarted)**</br>
 Download and install them in order</br>
@@ -70,7 +73,7 @@ Download and install them in order</br>
     $ source /opt/xilinx/xrt/setup.sh  
     ```
 
-### 2. CMake
+### 3. CMake
 Install the latest CMake (Make sure cmake version>3.5 before proceeding).
 >  [Ubuntu cmake 編譯安裝](https://shengyu7697.github.io/ubuntu-cmake/)
 >  [How to Install CMake on Ubuntu 20.04 LTS](https://vitux.com/how-to-install-cmake-on-ubuntu/
@@ -109,7 +112,7 @@ Download the source distribution `  cmake-<latest-version>.tar.gz  `
     $ cmake --version
     ```
 
-### 3. OpenCV-4.4.0 x86 library
+### 4. OpenCV-4.4.0 x86 library
 Libraries **should not** be builded at shared folder!
 > [Install OpenCV-Python in Ubuntu](https://docs.opencv.org/4.4.0/d2/de6/tutorial_py_setup_in_ubuntu.html)
 
@@ -179,7 +182,7 @@ Libraries **should not** be builded at shared folder!
     ```
     
     
-### 4. libOpenCL.so</br>
+### 5. libOpenCL.so</br>
 
 > [OpenCL Installable Client Driver Loader](https://docs.xilinx.com/r/en-US/ug1393-vitis-application-acceleration/OpenCL-Installable-Client-Driver-Loader?tocId=rL1XqX3uRUq6DWvD71c6qQ)
 
@@ -193,7 +196,7 @@ On Ubuntu the ICD library is packaged with the distribution. Install the followi
     ```
     </br>
     
-### 5. libpng library (optional)
+### 6. libpng library (optional)
 
 > [Official Repository Installation Guide](https://github.com/glennrp/libpng/blob/libpng16/INSTALL)
 > [How to install libpng-1.6.37.tar.xz in ubuntu 20.04?](https://askubuntu.com/questions/1267837/how-to-install-libpng-1-6-37-tar-xz-in-ubuntu-20-04)
