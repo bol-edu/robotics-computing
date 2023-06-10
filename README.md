@@ -45,7 +45,7 @@ Prerequisites:
 - libOpenCL.so
 - libpng library (optional)
 
-## Setup Prerequisites
+## Prepare the Environment
 ### 1. Xilinx Vitis Suite
 Install necessary dependencies before Vitis installation: 
 ```
@@ -229,7 +229,6 @@ Appendix
 `< path-to-platform-directory >/< platform >.xpfm` = `/opt/xilinx/platforms/xilinx_u50_gen3x16_xdma_5_202210_1/xilinx_u50_gen3x16_xdma_5_202210_1.xpfm`
 
 
-
 ## Directory Structure
    ```
     ${ProjectFolder}
@@ -260,7 +259,6 @@ Appendix
    Please download the [dataset.zip](https://drive.google.com/file/d/10q1iml4rOL9GB1Ew3EcNF0lm_c7B5Nf_/view?usp=drivesdk) from drive and unzip.
 
 ## Quick Start
-### Prepare the Environment
 
 ### Build Bitstream from Each Kernel Function
 
