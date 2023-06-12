@@ -269,7 +269,7 @@ Appendix
    ```
    Please download the [dataset.zip](https://drive.google.com/file/d/10q1iml4rOL9GB1Ew3EcNF0lm_c7B5Nf_/view?usp=drivesdk) from drive and unzip.
 
-## Quick Start (Build From CLI Script)
+## Start (Build From CLI Script)
 
 ### Build Bitstream from Each Kernel Function
 Please reference the `README.md` in each kernel function([SGBM](SGBM), [feature-extraction](feature-extraction), [feature-tracking](feature-tracking), [motion-estimation](motion-estimation)) to build binary.
@@ -315,6 +315,7 @@ You can modify the behavior of the host program in `Parameters.hpp`. There are 3
 ### Run
 
 </br>
+
 ## Quick Start (Build From GUI)
 
 ### Setup Vitis
