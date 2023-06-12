@@ -78,7 +78,7 @@ Download and install them in order</br>
 ### 3. CMake
 Install the latest CMake (Make sure cmake version>3.5 before proceeding).
 >  [Ubuntu cmake 編譯安裝](https://shengyu7697.github.io/ubuntu-cmake/)
->  [How to Install CMake on Ubuntu 20.04 LTS](https://vitux.com/how-to-install-cmake-on-ubuntu/
+>  [How to Install CMake on Ubuntu 20.04 LTS](https://vitux.com/how-to-install-cmake-on-ubuntu/)
 
 1. **[Go to CMake File Downloads](https://cmake.org/download/)** </br>
 Download the source distribution `  cmake-<latest-version>.tar.gz  `
