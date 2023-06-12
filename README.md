@@ -269,7 +269,7 @@ Appendix
    ```
    Please download the [dataset.zip](https://drive.google.com/file/d/10q1iml4rOL9GB1Ew3EcNF0lm_c7B5Nf_/view?usp=drivesdk) from drive and unzip.
 
-## Start (Build From CLI Script)
+## Quick Start (Build From CLI Script)
 
 ### Build Bitstream from Each Kernel Function
 Please reference the `README.md` in each kernel function([SGBM](SGBM), [feature-extraction](feature-extraction), [feature-tracking](feature-tracking), [motion-estimation](motion-estimation)) to build binary.
