@@ -412,7 +412,9 @@ You can modify the behavior of the host program in `Parameters.hpp`. There are 3
 The output trajectory should be write to `OUTPUT_FOLDER_PATH ` in `parameter.hpp`.
 And here's demo.
 
-![](./doc/img/demo.mp4)
+
+
+https://github.com/bol-edu/robotics-computing/assets/85032763/5f17a207-c9ef-431d-83b0-bc3079efb19e
 > trajectory of 2000 iterations generated with `ground truth`, `self-contain C code`, `FPGA kernel`.
 
 
