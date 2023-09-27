@@ -311,8 +311,6 @@ You can modify the behavior of the host program in `Parameters.hpp`. There are 3
       \   \- sequences 
    ```
    
-### Build Whole System using Bitstream
-### Run
 
 </br>
 
